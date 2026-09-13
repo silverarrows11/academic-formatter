@@ -11,7 +11,7 @@ has_paid = query_params.get("paid") == "true"
 
 if not has_paid:
     st.info("Please complete payment to unlock full formatting capabilities.")
-    st.link_button("Pay $1.00 to Format Document", "YOUR_STRIPE_PAYMENT_LINK_HERE")
+    st.link_button("Pay $1.00 to Format Document", "https://buy.stripe.com/3cIaEZ64O7tc6OP16p5Ne00")
 else:
     st.success("Payment verified! Paste your document below.")
     user_text = st.text_area("Paste draft here:", height=250)
