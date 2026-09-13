@@ -4,27 +4,24 @@ import openai
 st.set_page_config(page_title="Instant APA/MLA Document Formatter", page_icon="📝")
 
 st.title("📝 Instant Document & Citation Formatter")
-st.write("Paste your raw text below to convert it into perfect APA 7th Edition format instantly.")
 
-# User Input
-user_text = st.text_area("Paste your unformatted draft or reference list here:", height=250)
-format_style = st.selectbox("Select Formatting Style", ["APA 7th Edition", "MLA 9th Edition", "Harvard Style"])
+# Check if user arrived via Stripe redirect
+query_params = st.query_params
+has_paid = query_params.get("paid") == "true"
 
-if st.button("Format Document"):
-    if not user_text:
-        st.warning("Please paste some text first.")
-    else:
-        # Access secret key securely
+if not has_paid:
+    st.info("Please complete payment to unlock full formatting capabilities.")
+    st.link_button("Pay $1.00 to Format Document", "YOUR_STRIPE_PAYMENT_LINK_HERE")
+else:
+    st.success("Payment verified! Paste your document below.")
+    user_text = st.text_area("Paste draft here:", height=250)
+    format_style = st.selectbox("Select Style", ["APA 7th Edition", "MLA 9th Edition", "Harvard Style"])
+
+    if st.button("Generate Formatted Document"):
         client = openai.OpenAI(api_key=st.secrets["OPENAI_API_KEY"])
+        system_prompt = f"Reformat strictly according to {format_style} guidelines."
         
-        system_prompt = f"""
-        You are an expert academic editor. Reformat the user's input strictly according to {format_style} guidelines.
-        Fix inline citations, reference lists, headings, and overall structure.
-        Do not change the core meaning or writing voice of the user.
-        Return only the formatted output ready to copy/paste.
-        """
-        
-        with st.spinner("Formatting your document..."):
+        with st.spinner("Formatting..."):
             response = client.chat.completions.create(
                 model="gpt-4o-mini",
                 messages=[
@@ -32,7 +29,4 @@ if st.button("Format Document"):
                     {"role": "user", "content": user_text}
                 ]
             )
-            
-            formatted_result = response.choices[0].message.content
-            st.success("Formatting Complete!")
-            st.text_area("Formatted Output:", value=formatted_result, height=300)
+            st.text_area("Formatted Output:", value=response.choices[0].message.content, height=300)
