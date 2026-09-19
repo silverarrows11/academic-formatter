@@ -33,7 +33,7 @@ st.markdown("""
         border: 1px solid #E2E8F0;
         padding: 18px;
         border-radius: 14px;
-        margin-bottom: 20px;
+        margin-bottom: 12px;
     }
     .status-badge {
         display: inline-block;
@@ -47,18 +47,22 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# Configuration
+# Configuration — INSERT YOUR VALUES HERE
 FREE_CHAR_LIMIT = 1200
-STRIPE_PAYMENT_URL = "https://buy.stripe.com/3cIaEZ64O7tc6OP16p5Ne00"
-VALID_PRO_CODE = "PRO2026"
+STRIPE_PAYMENT_URL = "https://buy.stripe.com/3cIaEZ64O7tc6OP16p5Ne00"  # <-- LINE 46: INSERT STRIPE LINK HERE
+VALID_PRO_CODE = "PRO2026"                                          # <-- LINE 47: INSERT YOUR ACCESS CODE
 
-# --- SIDEBAR: MODERN PLAN CARDS ---
+# --- SIDEBAR: MODERN PLAN CARDS & PASSCODE FLOW ---
 with st.sidebar:
     st.markdown("### 🎓 Account Status")
-    user_code = st.text_input("Enter Pro Passcode:", type="password", placeholder="Enter key...")
-    is_pro = (user_code == VALID_PRO_CODE)
 
-    if is_pro:
+    # Manage session state for passcode toggle & access
+    if "show_passcode_input" not in st.session_state:
+        st.session_state.show_passcode_input = False
+    if "is_pro" not in st.session_state:
+        st.session_state.is_pro = False
+
+    if st.session_state.is_pro:
         st.markdown('<span class="status-badge badge-pro">PRO ACTIVE</span>', unsafe_allow_html=True)
         st.caption("All premium features unlocked.")
     else:
@@ -73,18 +77,35 @@ with st.sidebar:
                     <li>Unlimited character length</li>
                     <li>Download formatted .docx files</li>
                     <li>MLA, Harvard, Chicago, IEEE</li>
-                    <li>Citations Auditor</li>
-                    <li><b>Writing Critique & Tips</b></li>
+                    <li>Citation Consistency Auditor</li>
+                    <li>Writing Feedback & Tips</li>
                 </ul>
                 <a href="{STRIPE_PAYMENT_URL}" target="_blank" style="text-decoration:none;">
                     <button style="width:100%; background:#2563EB; color:white; border:none; padding:8px 0; border-radius:8px; font-weight:600; cursor:pointer;">
-                        Unlock Pro (€1.00)
+                        Buy Pro (€1.00)
                     </button>
                 </a>
             </div>
             """,
             unsafe_allow_html=True
         )
+
+        # 2-step passcode input reveal
+        if not st.session_state.show_passcode_input:
+            if st.button("Unlock with Passcode"):
+                st.session_state.show_passcode_input = True
+                st.rerun()
+        else:
+            code_input = st.text_input("Enter Passcode:", type="password", placeholder="Enter key...")
+            if st.button("Submit Code"):
+                if code_input == VALID_PRO_CODE:
+                    st.session_state.is_pro = True
+                    st.success("Unlocked!")
+                    st.rerun()
+                else:
+                    st.error("Invalid passcode.")
+
+is_pro = st.session_state.is_pro
 
 # --- MAIN PAGE HEADER ---
 st.title("Academic Document Suite")
@@ -132,17 +153,17 @@ def create_docx(content, title_style):
         section.bottom_margin = Inches(1)
         section.left_margin = Inches(1)
         section.right_margin = Inches(1)
-        
+
     head = doc.add_paragraph()
     head_run = head.add_run(f"Formatted Output ({title_style})\n\n")
     head_run.bold = True
-    
+
     body = doc.add_paragraph()
     body_run = body.add_run(content)
     body_run.font.name = "Times New Roman"
     body_run.font.size = Pt(12)
     body.paragraph_format.line_spacing = 2.0
-    
+
     stream = io.BytesIO()
     doc.save(stream)
     stream.seek(0)
@@ -156,7 +177,7 @@ if st.button("Process Document", type="primary"):
         st.error(f"Text exceeds the {FREE_CHAR_LIMIT}-character free limit. Please upgrade to continue.")
     else:
         client = openai.OpenAI(api_key=st.secrets["OPENAI_API_KEY"])
-        
+
         extra_prompts = []
         if is_pro and audit_citations:
             extra_prompts.append("- Check in-text citations against the reference list. Note discrepancies under a clear '=== CITATION AUDIT REPORT ===' header.")
@@ -170,10 +191,10 @@ if st.button("Process Document", type="primary"):
         Reformat the provided text strictly according to {format_style} standards (capitalization, references, layout).
         Keep the author's core thesis intact.
         {prompt_additions}
-        
+
         Structure your answer cleanly with Markdown.
         """
-        
+
         with st.spinner("Processing document and generating suggestions..."):
             response = client.chat.completions.create(
                 model="gpt-4o-mini",
@@ -182,10 +203,10 @@ if st.button("Process Document", type="primary"):
                     {"role": "user", "content": user_text}
                 ]
             )
-            
+
             output = response.choices[0].message.content
             st.success("Completed successfully!")
-            
+
             # Display output in tabs if Pro options are used
             if is_pro and (provide_critique or audit_citations):
                 tab1, tab2 = st.tabs(["📄 Formatted Document", "💡 Feedback & Reports"])
