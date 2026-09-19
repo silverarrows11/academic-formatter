@@ -12,7 +12,7 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
-# 2. Modern 2026 Mobile-Optimized SaaS Styling
+# 2. Modern SaaS Styling
 st.markdown("""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap');
@@ -31,10 +31,11 @@ st.markdown("""
         background: #F8FAFC;
         border: 1px solid #E2E8F0;
         border-radius: 12px;
-        padding: 14px 18px;
+        padding: 16px 20px;
         margin-top: 1.5rem;
         font-size: 13px;
         color: #475569;
+        line-height: 1.6;
     }
     .pro-banner {
         background: linear-gradient(135deg, #1E293B 0%, #0F172A 100%);
@@ -57,9 +58,10 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# 3. Configuration — INSERT YOUR STRIPE PAYMENT LINK ON LINE 62
+# 3. Configuration Limits & Credentials
 FREE_CHAR_LIMIT = 1200
-STRIPE_PAYMENT_URL = "https://buy.stripe.com/3cIaEZ64O7tc6OP16p5Ne00"  # <-- LINE 62
+PRO_MAX_CHARS = 35000  # Step 1: ~6,000-word safety ceiling for Pro
+STRIPE_PAYMENT_URL = "https://buy.stripe.com/3cIaEZ64O7tc6OP16p5Ne00"  # <-- INSERT YOUR STRIPE LINK HERE
 
 SAMPLE_TEXT = """The Impact of Screen Time on Teen Sleep Patterns
 
@@ -69,7 +71,7 @@ References:
 Smith, John. (2021). Blue light and circadian rhythms. Journal of Sleep Health, 15(2), 104-112.
 johnson, m., & Lee, T. 2019. Social media addiction in secondary school students. Adolescent Psychology Review 8(4): 45-59."""
 
-# 4. State Management & Auto-Unlock via Stripe Redirect
+# 4. State Management & URL Auto-Unlock
 if "is_pro" not in st.session_state:
     st.session_state.is_pro = False
 if "free_uses" not in st.session_state:
@@ -77,13 +79,17 @@ if "free_uses" not in st.session_state:
 if "input_text" not in st.session_state:
     st.session_state.input_text = ""
 
-# Check for automatic return from Stripe (?pro=true)
+# Auto-activate Pro if arriving via Stripe return URL (?pro=true)
 if st.query_params.get("pro") == "true":
     st.session_state.is_pro = True
 
 is_pro = st.session_state.is_pro
 
-# Helper: Extract text from uploaded files (.txt or .docx)
+# Step 3: Bookmark alert for paying users
+if is_pro:
+    st.info("💡 **Pro Access Active:** Bookmark this browser URL (including `?pro=true`) to return to your Pro workspace at any time.")
+
+# Helpers for File Parsing & Word Generation
 def extract_text_from_file(uploaded_file):
     if uploaded_file.name.endswith(".docx"):
         doc = Document(uploaded_file)
@@ -91,7 +97,6 @@ def extract_text_from_file(uploaded_file):
     else:
         return uploaded_file.read().decode("utf-8")
 
-# Helper: Build Microsoft Word output
 def create_docx(content, title_style):
     doc = Document()
     for section in doc.sections:
@@ -115,7 +120,7 @@ def create_docx(content, title_style):
     stream.seek(0)
     return stream
 
-# 5. Header Section
+# 5. Header Bar
 head_col1, head_col2 = st.columns([3, 1])
 with head_col1:
     st.title("FormatForge")
@@ -126,7 +131,7 @@ with head_col2:
     else:
         st.markdown('<div style="text-align:right; margin-top:20px;"><span class="badge badge-free">FREE TRIAL</span></div>', unsafe_allow_html=True)
 
-# 6. Pro Upgrade Banner (Only shows if user is on the Free tier)
+# 6. Pro Upgrade Banner (Free Tier only)
 if not is_pro:
     st.markdown(
         f"""
@@ -143,7 +148,7 @@ if not is_pro:
         unsafe_allow_html=True
     )
 
-# 7. Main Tabs (Clean layout on both phone and laptop)
+# 7. Layout Tabs
 tab_input, tab_settings = st.tabs(["📝 Document Editor", "⚙️ Options & Citation Rules"])
 
 with tab_settings:
@@ -163,7 +168,6 @@ with tab_settings:
         st.caption("🔒 Cross-checking and advanced style guides are reserved for Pro users.")
 
 with tab_input:
-    # Action row for quick testing and file upload
     action_col1, action_col2 = st.columns([1, 1])
     with action_col1:
         if st.button("📄 Pre-fill Sample Draft", use_container_width=True):
@@ -187,11 +191,11 @@ with tab_input:
     if not is_pro:
         st.caption(f"Characters: {char_len}/{FREE_CHAR_LIMIT} | Free runs remaining: {max(0, 1 - st.session_state.free_uses)}")
     else:
-        st.caption(f"Characters: {char_len} (Unlimited Pro Access)")
+        st.caption(f"Characters: {char_len}/{PRO_MAX_CHARS:,} (Pro Unlimited)")
 
     run_button = st.button("✨ Format & Standardize", type="primary", use_container_width=True)
 
-# 8. Execution & Stepped Progress
+# 8. Execution Logic & Guardrails
 if run_button:
     if not user_text.strip():
         st.warning("Please paste or upload text first.")
@@ -199,10 +203,12 @@ if run_button:
         st.error("Free trial limit reached. Upgrade to Pro (€1.00) above for unlimited usage.")
     elif not is_pro and char_len > FREE_CHAR_LIMIT:
         st.error(f"Text exceeds the {FREE_CHAR_LIMIT}-character limit. Shorten your input or upgrade to Pro.")
+    # Step 1: Enforce Pro Guardrail
+    elif is_pro and char_len > PRO_MAX_CHARS:
+        st.error(f"Input exceeds the safety ceiling of {PRO_MAX_CHARS:,} characters (~6,000 words). Please process longer manuscripts in separate sections.")
     else:
         client = openai.OpenAI(api_key=st.secrets["OPENAI_API_KEY"])
 
-        # Dynamic Status Container
         with st.status("Analyzing and formatting...", expanded=True) as status_box:
             st.write("🔍 Parsing text and checking citation references...")
             
@@ -221,48 +227,60 @@ if run_button:
 
             st.write(f"📐 Applying {format_style} conventions...")
             
-            response = client.chat.completions.create(
-                model="gpt-4o-mini",
-                messages=[
-                    {"role": "system", "content": system_message},
-                    {"role": "user", "content": user_text}
-                ]
-            )
-            
-            output_content = response.choices[0].message.content
-            
-            if not is_pro:
-                st.session_state.free_uses += 1
-                
-            status_box.update(label="Document processed successfully!", state="complete", expanded=False)
+            # Step 2: Graceful Error Handling
+            try:
+                response = client.chat.completions.create(
+                    model="gpt-4o-mini",
+                    messages=[
+                        {"role": "system", "content": system_message},
+                        {"role": "user", "content": user_text}
+                    ],
+                    timeout=60.0
+                )
+                output_content = response.choices[0].message.content
+                if not is_pro:
+                    st.session_state.free_uses += 1
+                status_box.update(label="Document processed successfully!", state="complete", expanded=False)
+            except openai.APIConnectionError:
+                status_box.update(label="Network error", state="error")
+                st.error("Could not reach the AI formatting engine. Please check your connection and try again.")
+                st.stop()
+            except openai.RateLimitError:
+                status_box.update(label="System busy", state="error")
+                st.error("The system is receiving high traffic right now. Please wait 15 seconds and click 'Format' again.")
+                st.stop()
+            except Exception as e:
+                status_box.update(label="Processing error", state="error")
+                st.error("An unexpected error occurred while formatting. Please verify your input and try again.")
+                st.stop()
 
-        # 9. Deliverables Section
+        # 9. Deliverables Display
         st.markdown("### Formatted Deliverable")
         clean_text = output_content.split("===")[0].strip()
         st.text_area("Copy Formatted Text:", value=clean_text, height=260)
 
-        # Pro Download Button
         if is_pro:
             docx_output = create_docx(clean_text, format_style)
             st.download_button(
                 label="📥 Download Standardized .docx File",
                 data=docx_output,
-                file_name="formatted_paper.docx",
+                file_name="academic_formatted_paper.docx",
                 mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
                 use_container_width=True
             )
         
-        # Display Audit or Critique tabs if Pro
         if "===" in output_content:
             st.markdown("### Editorial Reports")
             st.markdown(output_content)
 
-# 10. Trust and Security Footer
+# 10. Step 4: Trust, Security & Academic Integrity Footer
 st.markdown(
     """
     <div class="trust-card">
         <b>Data Protection & Security:</b> Documents are processed in volatile memory and never stored, indexed, or shared. 
-        Transactions are securely handled by Stripe with 256-bit encryption.
+        Transactions are securely processed with 256-bit Stripe encryption.<br><br>
+        <b>Academic Integrity Notice:</b> FormatForge is strictly an editorial and citation standardization tool. 
+        It does not research, ghostwrite, or generate original arguments on behalf of students.
     </div>
     """,
     unsafe_allow_html=True
