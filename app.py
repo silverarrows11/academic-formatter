@@ -1,91 +1,137 @@
+import io
 import streamlit as st
 import openai
+from docx import Document
+from docx.shared import Inches, Pt
 
-# 1. Page Configuration
-st.set_page_config(
-    page_title="Instant APA/MLA/Harvard Document Formatter", 
-    page_icon="📝",
-    layout="centered"
+st.set_page_config(page_title="Academic Document Formatter", page_icon="📝", layout="wide")
+
+# Configuration
+FREE_CHAR_LIMIT = 1200
+STRIPE_PAYMENT_URL = "https://buy.stripe.com/3cIaEZ64O7tc6OP16p5Ne00"
+VALID_PRO_CODE = "PRO2026"  # Replace with your custom passkey or dynamic system
+
+# --- SIDEBAR: PRICING TIERS ---
+st.sidebar.title("Plan Comparison")
+st.sidebar.markdown(
+    """
+| Feature | Free Tier | Pro Pass (€1.00) |
+| :--- | :---: | :---: |
+| **Character Limit** | 1,200 chars | Unlimited |
+| **Styles** | APA 7th only | APA, MLA, Harvard, Chicago, IEEE |
+| **Download .docx** | ❌ | ✅ |
+| **Citation Auditor**| ❌ | ✅ |
+| **Auto-Alphabetize**| ❌ | ✅ |
+"""
 )
 
-st.title("📝 Instant Document & Citation Formatter")
-st.write("Convert your unformatted drafts, reference lists, and inline citations into perfectly styled academic documents in seconds.")
+st.sidebar.markdown(f"[👉 **Upgrade to Pro**]({STRIPE_PAYMENT_URL})")
+user_code = st.sidebar.text_input("Enter Pro Access Code:", type="password")
+is_pro = (user_code == VALID_PRO_CODE)
 
-# 2. Check Stripe Payment Verification
-query_params = st.query_params
-has_paid = query_params.get("paid") == "true"
-
-if not has_paid:
-    st.info("🔒 Complete a one-time payment of €1.00 to unlock instant automated formatting.")
-    st.link_button("Pay €1.00 to Format Document", "https://buy.stripe.com/3cIaEZ64O7tc6OP16p5Ne00")
+if is_pro:
+    st.sidebar.success("Pro Tier Active! All features unlocked.")
 else:
-    st.success("✅ Payment verified! You now have full access to the formatting engine.")
-    
-    # 3. User Inputs
-    user_text = st.text_area(
-        "Paste your unformatted draft or reference list below:", 
-        height=250,
-        placeholder="Paste your essay, citations, or paper notes here..."
-    )
-    
-    col1, col2 = st.columns(2)
-    with col1:
-        format_style = st.selectbox(
-            "Select Citation Style", 
-            ["APA 7th Edition", "MLA 9th Edition", "Chicago Manual of Style", "Harvard Style"]
-        )
-    with col2:
-        output_focus = st.selectbox(
-            "Primary Task",
-            ["Full Paper Formatting", "Reference List Only", "Inline Citations Only"]
-        )
+    st.sidebar.info("Using Free Tier.")
 
-    custom_notes = st.text_input(
-        "Optional: Any specific rules? (e.g., 'Include hanging indents', 'Double space')", 
-        placeholder="e.g., Fix missing author names if detectable"
-    )
+# --- MAIN INTERFACE ---
+st.title("📝 Academic Formatter & Citation Engine")
+st.write("Convert raw drafts and bibliographies into clean, publication-ready academic formats.")
 
-    # 4. Processing Action
-    if st.button("Generate Formatted Document"):
-        if not user_text.strip():
-            st.warning("Please paste your text into the box above before formatting.")
-        else:
-            client = openai.OpenAI(api_key=st.secrets["OPENAI_API_KEY"])
+# Tier-dependent inputs
+if is_pro:
+    format_style = st.selectbox(
+        "Select Formatting Style:",
+        ["APA 7th Edition", "MLA 9th Edition", "Harvard Style", "Chicago Manual of Style", "IEEE"]
+    )
+    audit_citations = st.checkbox("Run Citation Auditor (Flags uncited sources or missing references)")
+else:
+    st.caption("🔒 *Free tier uses APA 7th Edition. Upgrade to access MLA, Harvard, Chicago, and IEEE.*")
+    format_style = "APA 7th Edition"
+    audit_citations = False
+
+user_text = st.text_area("Paste your text or references below:", height=250)
+char_count = len(user_text)
+
+# Character limit display
+if not is_pro:
+    st.caption(f"Character Count: {char_count}/{FREE_CHAR_LIMIT}")
+    if char_count > FREE_CHAR_LIMIT:
+        st.warning(f"Your input exceeds the free {FREE_CHAR_LIMIT}-character limit. Please shorten your text or unlock Pro.")
+else:
+    st.caption(f"Character Count: {char_count} (Unlimited)")
+
+# --- HELPER: DOCX GENERATOR ---
+def create_docx(content, title_style):
+    doc = Document()
+    
+    # 1-inch margins
+    sections = doc.sections
+    for section in sections:
+        section.top_margin = Inches(1)
+        section.bottom_margin = Inches(1)
+        section.left_margin = Inches(1)
+        section.right_margin = Inches(1)
+        
+    p = doc.add_paragraph()
+    run = p.add_run(f"Formatted Output ({title_style})\n\n")
+    run.bold = True
+    
+    # Body text formatting (Times New Roman, 12pt, double-spaced)
+    body = doc.add_paragraph()
+    body_run = body.add_run(content)
+    body_run.font.name = "Times New Roman"
+    body_run.font.size = Pt(12)
+    body.paragraph_format.line_spacing = 2.0
+    
+    file_stream = io.BytesIO()
+    doc.save(file_stream)
+    file_stream.seek(0)
+    return file_stream
+
+# --- PROCESS BUTTON ---
+if st.button("Format Document"):
+    if not user_text.strip():
+        st.warning("Please enter text to format.")
+    elif not is_pro and char_count > FREE_CHAR_LIMIT:
+        st.error(f"Cannot process: Text exceeds the free tier limit of {FREE_CHAR_LIMIT} characters.")
+    else:
+        client = openai.OpenAI(api_key=st.secrets["OPENAI_API_KEY"])
+        
+        # Build prompt based on tier
+        extra_instructions = ""
+        if is_pro and audit_citations:
+            extra_instructions += "\n- Cross-check body citations against the reference list and append an 'Auditor Report' at the end noting any missing matches."
+        if is_pro:
+            extra_instructions += "\n- Alphabetize the bibliography strictly according to author last name/title guidelines."
+
+        system_prompt = f"""
+        You are an expert academic editor. Reformat the user's text strictly according to {format_style} guidelines.
+        Ensure correct capitalization, italics, punctuation, and structure.{extra_instructions}
+        Return only the formatted document ready for submission.
+        """
+        
+        with st.spinner("Processing document..."):
+            response = client.chat.completions.create(
+                model="gpt-4o-mini",
+                messages=[
+                    {"role": "system", "content": system_prompt},
+                    {"role": "user", "content": user_text}
+                ]
+            )
             
-            system_prompt = f"""
-            You are a rigorous academic editor specializing in citation standard compliance.
-            Reformat the user's input strictly according to {format_style} standards.
-            Focus area requested: {output_focus}.
-            Additional user instructions: {custom_notes if custom_notes else 'None'}.
-
-            Rules:
-            1. Fix all inline parenthetical citations and reference entries.
-            2. Standardize headings, capitalization, italics, and structure per standard formatting guidelines.
-            3. Do not alter the underlying thesis, facts, or writing voice.
-            4. Output ONLY the polished, formatted document text ready for submission.
-            """
-
-            with st.spinner("Analyzing and formatting your document..."):
-                try:
-                    response = client.chat.completions.create(
-                        model="gpt-4o-mini",
-                        messages=[
-                            {"role": "system", "content": system_prompt},
-                            {"role": "user", "content": user_text}
-                        ]
-                    )
-                    
-                    formatted_result = response.choices[0].message.content
-                    
-                    st.subheader("🎉 Your Formatted Document")
-                    st.text_area("Result:", value=formatted_result, height=350)
-                    
-                    # File Download Option
-                    st.download_button(
-                        label="Download Text File (.txt)",
-                        data=formatted_result,
-                        file_name="formatted_document.txt",
-                        mime="text/plain"
-                    )
-                except Exception as e:
-                    st.error("An error occurred during formatting. Please verify your settings or try again.")
+            output_text = response.choices[0].message.content
+            st.success("Formatting Complete!")
+            st.text_area("Formatted Result:", value=output_text, height=300)
+            
+            # Export Option (Pro Only)
+            if is_pro:
+                docx_file = create_docx(output_text, format_style)
+                st.download_button(
+                    label="📥 Download as .docx",
+                    data=docx_file,
+                    file_name="formatted_paper.docx",
+                    mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+                )
+            else:
+                st.info("💡 Want a pre-formatted Word (.docx) file with 1-inch margins and double spacing? Upgrade to Pro.")
