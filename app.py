@@ -61,7 +61,7 @@ st.markdown("""
 # 3. Configuration Limits & Credentials
 FREE_CHAR_LIMIT = 1200
 PRO_MAX_CHARS = 35000  # Step 1: ~6,000-word safety ceiling for Pro
-STRIPE_PAYMENT_URL = "https://buy.stripe.com/3cIaEZ64O7tc6OP16p5Ne00"  # <-- INSERT YOUR STRIPE LINK HERE
+STRIPE_PAYMENT_URL = "https://buy.stripe.com/cNidRbdxg5l4c9902l5Ne01"  # <-- INSERT YOUR STRIPE LINK HERE
 
 SAMPLE_TEXT = """The Impact of Screen Time on Teen Sleep Patterns
 
@@ -136,11 +136,11 @@ if not is_pro:
     st.markdown(
         f"""
         <div class="pro-banner">
-            <div style="font-size: 17px; font-weight: 700; margin-bottom: 4px;">Upgrade to FormatForge Pro — Only €1.00</div>
+            <div style="font-size: 17px; font-weight: 700; margin-bottom: 4px;">Upgrade to FormatForge Pro — Only $1.99</div>
             <div style="font-size: 13px; opacity: 0.85; margin-bottom: 12px;">Remove character limits, export pre-formatted Word documents, and access MLA, Chicago, and Harvard formatting.</div>
             <a href="{STRIPE_PAYMENT_URL}" target="_blank" style="text-decoration:none;">
                 <button style="background:#2563EB; color:#FFF; border:none; padding:8px 18px; border-radius:8px; font-weight:600; font-size:13px; cursor:pointer;">
-                    Unlock All Features (€1.00)
+                    Unlock All Features ($1.99)
                 </button>
             </a>
         </div>
@@ -200,7 +200,7 @@ if run_button:
     if not user_text.strip():
         st.warning("Please paste or upload text first.")
     elif not is_pro and st.session_state.free_uses >= 1:
-        st.error("Free trial limit reached. Upgrade to Pro (€1.00) above for unlimited usage.")
+        st.error("Free trial limit reached. Upgrade to Pro ($1.99) above for unlimited usage.")
     elif not is_pro and char_len > FREE_CHAR_LIMIT:
         st.error(f"Text exceeds the {FREE_CHAR_LIMIT}-character limit. Shorten your input or upgrade to Pro.")
     # Step 1: Enforce Pro Guardrail
