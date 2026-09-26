@@ -1,6 +1,8 @@
 import io
+import time
 import streamlit as st
 import openai
+import stripe
 from docx import Document
 from docx.shared import Inches, Pt
 
@@ -60,8 +62,13 @@ st.markdown("""
 
 # 3. Configuration Limits & Credentials
 FREE_CHAR_LIMIT = 1200
-PRO_MAX_CHARS = 35000  # Step 1: ~6,000-word safety ceiling for Pro
-STRIPE_PAYMENT_URL = "https://buy.stripe.com/cNidRbdxg5l4c9902l5Ne01"  # <-- INSERT YOUR STRIPE LINK HERE
+PRO_MAX_CHARS = 35000
+STRIPE_PAYMENT_URL = "https://buy.stripe.com/cNidRbdxg5l4c9902l5Ne01"
+DELIMITER = "---AUDIT_AND_FEEDBACK---"
+
+# Initialize Stripe API Key safely
+if "STRIPE_SECRET_KEY" in st.secrets:
+    stripe.api_key = st.secrets["STRIPE_SECRET_KEY"]
 
 SAMPLE_TEXT = """The Impact of Screen Time on Teen Sleep Patterns
 
@@ -71,23 +78,38 @@ References:
 Smith, John. (2021). Blue light and circadian rhythms. Journal of Sleep Health, 15(2), 104-112.
 johnson, m., & Lee, T. 2019. Social media addiction in secondary school students. Adolescent Psychology Review 8(4): 45-59."""
 
-# 4. State Management & URL Auto-Unlock
+# 4. State Management & Dynamic Stripe Session Verification
 if "is_pro" not in st.session_state:
     st.session_state.is_pro = False
 if "free_uses" not in st.session_state:
     st.session_state.free_uses = 0
 if "input_text" not in st.session_state:
     st.session_state.input_text = ""
+if "session_expired" not in st.session_state:
+    st.session_state.session_expired = False
 
-# Auto-activate Pro if arriving via Stripe return URL (?pro=true)
-if st.query_params.get("pro") == "true":
-    st.session_state.is_pro = True
+# Validate dynamic Stripe session parameter (?session_id=cs_...)
+session_id = st.query_params.get("session_id")
+
+if session_id and not st.session_state.is_pro:
+    try:
+        session = stripe.checkout.Session.retrieve(session_id)
+        if session.payment_status == "paid":
+            # 2-hour window validation (7200 seconds)
+            time_elapsed = time.time() - session.created
+            if time_elapsed < 7200:
+                st.session_state.is_pro = True
+            else:
+                st.session_state.session_expired = True
+    except Exception:
+        st.session_state.is_pro = False
 
 is_pro = st.session_state.is_pro
 
-# Step 3: Bookmark alert for paying users
 if is_pro:
-    st.info("💡 **Pro Access Active:** Bookmark this browser URL (including `?pro=true`) to return to your Pro workspace at any time.")
+    st.info("💡 **Pro Access Active (2-Hour Window):** Keep this browser tab open to run and export all your documents.")
+elif st.session_state.session_expired:
+    st.warning("⚠️ **Pass Expired:** Your 2-hour Pro pass has elapsed. Please purchase a new pass to process extended manuscripts.")
 
 # Helpers for File Parsing & Word Generation
 def extract_text_from_file(uploaded_file):
@@ -136,11 +158,11 @@ if not is_pro:
     st.markdown(
         f"""
         <div class="pro-banner">
-            <div style="font-size: 17px; font-weight: 700; margin-bottom: 4px;">Upgrade to FormatForge Pro — Only $1.99</div>
+            <div style="font-size: 17px; font-weight: 700; margin-bottom: 4px;">Upgrade to FormatForge Pro — Only €1.00</div>
             <div style="font-size: 13px; opacity: 0.85; margin-bottom: 12px;">Remove character limits, export pre-formatted Word documents, and access MLA, Chicago, and Harvard formatting.</div>
             <a href="{STRIPE_PAYMENT_URL}" target="_blank" style="text-decoration:none;">
                 <button style="background:#2563EB; color:#FFF; border:none; padding:8px 18px; border-radius:8px; font-weight:600; font-size:13px; cursor:pointer;">
-                    Unlock All Features ($1.99)
+                    Unlock All Features (€1.00)
                 </button>
             </a>
         </div>
@@ -200,10 +222,9 @@ if run_button:
     if not user_text.strip():
         st.warning("Please paste or upload text first.")
     elif not is_pro and st.session_state.free_uses >= 1:
-        st.error("Free trial limit reached. Upgrade to Pro ($1.99) above for unlimited usage.")
+        st.error("Free trial limit reached. Upgrade to Pro (€1.00) above for unlimited usage.")
     elif not is_pro and char_len > FREE_CHAR_LIMIT:
         st.error(f"Text exceeds the {FREE_CHAR_LIMIT}-character limit. Shorten your input or upgrade to Pro.")
-    # Step 1: Enforce Pro Guardrail
     elif is_pro and char_len > PRO_MAX_CHARS:
         st.error(f"Input exceeds the safety ceiling of {PRO_MAX_CHARS:,} characters (~6,000 words). Please process longer manuscripts in separate sections.")
     else:
@@ -214,20 +235,26 @@ if run_button:
             
             instructions = []
             if is_pro and audit_citations:
-                instructions.append("- Cross-examine all in-text citations against the bibliography. List missing items under '=== CITATION INTEGRITY REPORT ==='.")
+                instructions.append("- Cross-examine all in-text citations against the bibliography. List missing items.")
             if is_pro and editorial_tips:
-                instructions.append("- Provide 3-4 bulleted suggestions to eliminate informal language or passive voice under '=== ACADEMIC WRITING CRITIQUE ==='.")
+                instructions.append("- Provide 3-4 bulleted suggestions to eliminate informal language or passive voice.")
 
             system_message = f"""
             You are a university academic copyeditor. Reformat the user's input strictly according to {format_style} standards.
             Alphabetize reference lists and verify proper capitalization and author layout.
-            {chr(10).join(instructions)}
             Do not alter the user's argument or core meaning.
+
+            Formatting Rules:
+            1. Output ONLY the clean, formatted academic paper first.
+            2. If reporting citation integrity issues or editorial critiques, place this exact separator on its own line:
+            {DELIMITER}
+            3. Put all audit notes and suggestions below that separator under clear headings.
+            
+            {chr(10).join(instructions)}
             """
 
             st.write(f"📐 Applying {format_style} conventions...")
             
-            # Step 2: Graceful Error Handling
             try:
                 response = client.chat.completions.create(
                     model="gpt-4o-mini",
@@ -249,14 +276,22 @@ if run_button:
                 status_box.update(label="System busy", state="error")
                 st.error("The system is receiving high traffic right now. Please wait 15 seconds and click 'Format' again.")
                 st.stop()
-            except Exception as e:
+            except Exception:
                 status_box.update(label="Processing error", state="error")
                 st.error("An unexpected error occurred while formatting. Please verify your input and try again.")
                 st.stop()
 
         # 9. Deliverables Display
         st.markdown("### Formatted Deliverable")
-        clean_text = output_content.split("===")[0].strip()
+        
+        if DELIMITER in output_content:
+            clean_text, editorial_notes = output_content.split(DELIMITER, 1)
+            clean_text = clean_text.strip()
+            editorial_notes = editorial_notes.strip()
+        else:
+            clean_text = output_content.strip()
+            editorial_notes = ""
+
         st.text_area("Copy Formatted Text:", value=clean_text, height=260)
 
         if is_pro:
@@ -269,11 +304,11 @@ if run_button:
                 use_container_width=True
             )
         
-        if "===" in output_content:
-            st.markdown("### Editorial Reports")
-            st.markdown(output_content)
+        if editorial_notes:
+            st.markdown("### Editorial & Audit Reports")
+            st.markdown(editorial_notes)
 
-# 10. Step 4: Trust, Security & Academic Integrity Footer
+# 10. Trust, Security & Academic Integrity Footer
 st.markdown(
     """
     <div class="trust-card">
