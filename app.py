@@ -17,7 +17,7 @@ st.set_page_config(
 # 2. Modern SaaS Styling
 st.markdown("""
     <style>
-    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
     
     html, body, [class*="css"] {
         font-family: 'Plus Jakarta Sans', -apple-system, sans-serif;
@@ -29,6 +29,62 @@ st.markdown("""
         padding-bottom: 2rem;
         max-width: 820px;
     }
+    
+    /* Sleek gradient hero card */
+    .hero-card {
+        background: linear-gradient(135deg, #4F46E5 0%, #7C3AED 50%, #EC4899 100%);
+        padding: 28px 24px;
+        border-radius: 18px;
+        color: white;
+        margin-bottom: 24px;
+        box-shadow: 0 10px 25px -5px rgba(99, 102, 241, 0.3);
+    }
+    
+    /* Modern glowing action button */
+    div.stButton > button:first-child {
+        background: linear-gradient(135deg, #4F46E5 0%, #6366F1 100%);
+        color: white;
+        border: none;
+        border-radius: 12px;
+        padding: 12px 24px;
+        font-weight: 700;
+        font-size: 15px;
+        letter-spacing: -0.01em;
+        box-shadow: 0 4px 14px rgba(79, 70, 229, 0.4);
+        transition: transform 0.15s ease, box-shadow 0.15s ease;
+    }
+    div.stButton > button:first-child:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 6px 20px rgba(79, 70, 229, 0.6);
+    }
+    
+    /* Rounded text input */
+    .stTextArea textarea {
+        border-radius: 14px !important;
+        border: 1.5px solid #E2E8F0 !important;
+        padding: 14px !important;
+        font-size: 14px !important;
+        background-color: #FAFAFA !important;
+    }
+    .stTextArea textarea:focus {
+        border-color: #6366F1 !important;
+        box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15) !important;
+    }
+    
+    /* Feature pills */
+    .feature-pill {
+        display: inline-flex;
+        align-items: center;
+        background: rgba(255, 255, 255, 0.2);
+        backdrop-filter: blur(8px);
+        border: 1px solid rgba(255, 255, 255, 0.3);
+        padding: 4px 10px;
+        border-radius: 999px;
+        font-size: 11px;
+        font-weight: 600;
+        margin-right: 6px;
+    }
+    
     .trust-card {
         background: #F8FAFC;
         border: 1px solid #E2E8F0;
@@ -142,16 +198,28 @@ def create_docx(content, title_style):
     stream.seek(0)
     return stream
 
-# 5. Header Bar
-head_col1, head_col2 = st.columns([3, 1])
-with head_col1:
-    st.title("FormatForge")
-    st.caption("AI Academic Styling, Citation Auditing & Paper Verification")
-with head_col2:
-    if is_pro:
-        st.markdown('<div style="text-align:right; margin-top:20px;"><span class="badge badge-pro">PRO ACTIVE</span></div>', unsafe_allow_html=True)
-    else:
-        st.markdown('<div style="text-align:right; margin-top:20px;"><span class="badge badge-free">FREE TRIAL</span></div>', unsafe_allow_html=True)
+# 5. Header Bar & Hero Banner
+status_badge = '<span class="badge badge-pro">PRO ACTIVE</span>' if is_pro else '<span class="badge badge-free">FREE TRIAL</span>'
+
+st.markdown(f"""
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+        <span style="font-size: 20px; font-weight: 800; color: #0F172A; letter-spacing: -0.02em;">🎓 FormatForge</span>
+        <div>{status_badge}</div>
+    </div>
+    <div class="hero-card">
+        <div style="display: flex; gap: 8px; margin-bottom: 12px; flex-wrap: wrap;">
+            <span class="feature-pill">⚡ Instant Hanging Indents</span>
+            <span class="feature-pill">🎯 Fixes Missed Citations</span>
+            <span class="feature-pill">📑 Word .docx Ready</span>
+        </div>
+        <h1 style="color: white; font-size: 26px; font-weight: 800; margin: 0 0 8px 0; letter-spacing: -0.02em; line-height: 1.25;">
+            Never lose grade points to citation rules again.
+        </h1>
+        <p style="color: rgba(255, 255, 255, 0.9); font-size: 14px; margin: 0; line-height: 1.5;">
+            Paste messy text, sketchy links, or raw bibliographies. Get clean APA, MLA, or Harvard styling formatted in seconds.
+        </p>
+    </div>
+""", unsafe_allow_html=True)
 
 # 6. Pro Upgrade Banner (Free Tier only)
 if not is_pro:
