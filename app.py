@@ -14,7 +14,7 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
-# 2. Mobile-Optimized SaaS Styling with Contrast Fixes
+# 2. Modern SaaS Styling with Theme Contrast & Responsive Polish
 st.markdown("""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
@@ -25,16 +25,15 @@ st.markdown("""
     
     #MainMenu, header, footer { visibility: hidden; }
     
-    /* Responsive container padding */
     .block-container {
         padding-top: 1rem;
         padding-bottom: 2rem;
         padding-left: 1rem;
         padding-right: 1rem;
-        max-width: 800px;
+        max-width: 820px;
     }
     
-    /* Top Logo Bar - Adapts to light/dark themes */
+    /* Top Logo Bar */
     .top-nav {
         display: flex;
         justify-content: space-between;
@@ -45,28 +44,36 @@ st.markdown("""
         font-size: 22px;
         font-weight: 800;
         letter-spacing: -0.02em;
-        /* Gradient text to ensure visibility in both Light & Dark modes */
         background: linear-gradient(135deg, #6366F1 0%, #A855F7 100%);
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
     }
 
-    /* Mobile-first Hero Card */
+    /* Animated Gradient Hero Mesh */
     .hero-card {
-        background: linear-gradient(135deg, #1E1B4B 0%, #312E81 50%, #4338CA 100%);
-        padding: 24px 20px;
-        border-radius: 16px;
+        background: linear-gradient(-45deg, #1E1B4B, #312E81, #4338CA, #6366F1);
+        background-size: 300% 300%;
+        animation: gradientShift 10s ease infinite;
+        padding: 26px 22px;
+        border-radius: 18px;
         color: #FFFFFF !important;
-        margin-bottom: 20px;
-        box-shadow: 0 10px 25px -5px rgba(49, 46, 129, 0.4);
+        margin-bottom: 18px;
+        box-shadow: 0 12px 30px -6px rgba(79, 70, 229, 0.45);
+    }
+    
+    @keyframes gradientShift {
+        0% { background-position: 0% 50%; }
+        50% { background-position: 100% 50%; }
+        100% { background-position: 0% 50%; }
     }
     
     .hero-card h1 {
         color: #FFFFFF !important;
-        font-size: 24px;
+        font-size: 25px;
         font-weight: 800;
         margin: 10px 0 8px 0;
-        line-height: 1.3;
+        line-height: 1.25;
+        letter-spacing: -0.02em;
     }
     
     .hero-card p {
@@ -95,14 +102,14 @@ st.markdown("""
         font-weight: 600;
     }
 
-    /* TEXT AREA VISIBILITY FIX: Solid high-contrast colors */
+    /* High-Contrast Inputs (Solves Dark/Light Mode Invisibility) */
     .stTextArea textarea {
         background-color: #F8FAFC !important;
         color: #0F172A !important;
         -webkit-text-fill-color: #0F172A !important;
         border: 1.5px solid #CBD5E1 !important;
-        border-radius: 12px !important;
-        padding: 12px !important;
+        border-radius: 14px !important;
+        padding: 14px !important;
         font-size: 14px !important;
         line-height: 1.5 !important;
     }
@@ -116,21 +123,22 @@ st.markdown("""
         -webkit-text-fill-color: #64748B !important;
     }
 
-    /* Mobile Buttons */
+    /* Glowing Action Buttons */
     div.stButton > button:first-child {
-        background: linear-gradient(135deg, #4F46E5 0%, #6366F1 100%);
+        background: linear-gradient(135deg, #4F46E5 0%, #7C3AED 100%) !important;
         color: #FFFFFF !important;
-        border: none;
-        border-radius: 12px;
-        padding: 12px 20px;
-        font-weight: 700;
-        font-size: 15px;
-        box-shadow: 0 4px 14px rgba(79, 70, 229, 0.35);
-        transition: all 0.15s ease-in-out;
+        border: none !important;
+        border-radius: 12px !important;
+        padding: 14px 20px !important;
+        font-weight: 700 !important;
+        font-size: 15px !important;
+        letter-spacing: -0.01em !important;
+        box-shadow: 0 4px 18px rgba(99, 102, 241, 0.45) !important;
+        transition: transform 0.15s ease, box-shadow 0.15s ease !important;
     }
     div.stButton > button:first-child:hover {
-        transform: translateY(-1px);
-        box-shadow: 0 6px 18px rgba(79, 70, 229, 0.5);
+        transform: translateY(-2px) scale(1.01) !important;
+        box-shadow: 0 8px 24px rgba(99, 102, 241, 0.65) !important;
     }
     
     .pro-banner {
@@ -165,7 +173,6 @@ st.markdown("""
     .badge-pro { background: #10B981; color: #FFFFFF; }
     .badge-free { background: #334155; color: #E2E8F0; }
 
-    /* Mobile fine-tuning */
     @media (max-width: 640px) {
         .hero-card h1 { font-size: 20px; }
         .hero-card { padding: 18px 16px; }
@@ -200,6 +207,7 @@ if "input_text" not in st.session_state:
 if "session_expired" not in st.session_state:
     st.session_state.session_expired = False
 
+# Auto-verify session via Stripe API redirect parameter (?session_id=cs_...)
 session_id = st.query_params.get("session_id")
 
 if session_id and not st.session_state.is_pro:
@@ -207,7 +215,7 @@ if session_id and not st.session_state.is_pro:
         session = stripe.checkout.Session.retrieve(session_id)
         if session.payment_status == "paid":
             time_elapsed = time.time() - session.created
-            if time_elapsed < 7200:
+            if time_elapsed < 7200:  # 2-Hour Pro window
                 st.session_state.is_pro = True
             else:
                 st.session_state.session_expired = True
@@ -247,7 +255,7 @@ def create_docx(content, title_style):
     stream.seek(0)
     return stream
 
-# 5. Header Bar & Brand Logo
+# 5. Header Bar & Hero Banner
 status_badge = '<span class="badge badge-pro">PRO ACTIVE</span>' if is_pro else '<span class="badge badge-free">FREE TRIAL</span>'
 
 st.markdown(f"""
@@ -266,20 +274,78 @@ st.markdown(f"""
     </div>
 """, unsafe_allow_html=True)
 
+# Visual Upgrade 1: Interactive Transformation Preview Card
+st.markdown("""
+<div style="background: #FFFFFF; border: 1px solid #E2E8F0; border-radius: 14px; padding: 14px 18px; margin-bottom: 20px; box-shadow: 0 4px 12px rgba(0,0,0,0.03);">
+    <div style="font-size: 11px; font-weight: 700; color: #64748B; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 8px;">Instant Transformation</div>
+    <div style="display: grid; grid-template-columns: 1fr auto 1fr; gap: 10px; align-items: center; font-size: 12px; line-height: 1.4;">
+        <div style="background: #FEE2E2; color: #991B1B; padding: 8px 10px; border-radius: 8px; font-family: monospace;">
+            ❌ smith 2021 blue light sleep study www.sleepjournal.org/art12
+        </div>
+        <div style="color: #6366F1; font-weight: 800; font-size: 16px;">➔</div>
+        <div style="background: #DCFCE7; color: #166534; padding: 8px 10px; border-radius: 8px; font-family: serif; padding-left: 18px; text-indent: -10px;">
+            ✅ Smith, J. (2021). <i>Blue light and circadian rhythms</i>. Sleep Health, 15(2), 104–112.
+        </div>
+    </div>
+</div>
+""", unsafe_allow_html=True)
+
+# Visual Upgrade 2: University Social Proof Bar
+st.markdown("""
+<div style="text-align: center; margin-bottom: 20px;">
+    <div style="font-size: 11px; font-weight: 700; color: #94A3B8; letter-spacing: 0.06em; text-transform: uppercase; margin-bottom: 8px;">
+        Formatted according to official rubrics used at
+    </div>
+    <div style="display: flex; justify-content: center; gap: 16px; flex-wrap: wrap; opacity: 0.75; font-size: 12px; font-weight: 600; color: #475569;">
+        <span>🏛️ Oxford</span>
+        <span>•</span>
+        <span>🏛️ Harvard</span>
+        <span>•</span>
+        <span>🏛️ NYU</span>
+        <span>•</span>
+        <span>🏛️ Toronto</span>
+        <span>•</span>
+        <span>🏛️ Melbourne</span>
+    </div>
+</div>
+""", unsafe_allow_html=True)
+
+# Visual Upgrade 3: Three-Step Workflow Roadmap
+st.markdown("""
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; margin-bottom: 20px;">
+    <div style="background: #F8FAFC; border: 1px solid #E2E8F0; padding: 12px; border-radius: 10px; text-align: center;">
+        <div style="font-size: 18px; margin-bottom: 4px;">📋</div>
+        <div style="font-weight: 700; font-size: 12px; color: #1E293B;">1. Paste Draft</div>
+        <div style="font-size: 11px; color: #64748B;">Raw text or .docx</div>
+    </div>
+    <div style="background: #F8FAFC; border: 1px solid #E2E8F0; padding: 12px; border-radius: 10px; text-align: center;">
+        <div style="font-size: 18px; margin-bottom: 4px;">⚙️</div>
+        <div style="font-weight: 700; font-size: 12px; color: #1E293B;">2. Select Manual</div>
+        <div style="font-size: 11px; color: #64748B;">APA, MLA, Harvard</div>
+    </div>
+    <div style="background: #F8FAFC; border: 1px solid #E2E8F0; padding: 12px; border-radius: 10px; text-align: center;">
+        <div style="font-size: 18px; margin-bottom: 4px;">🚀</div>
+        <div style="font-weight: 700; font-size: 12px; color: #1E293B;">3. Export Clean</div>
+        <div style="font-size: 11px; color: #64748B;">Hanging indents set</div>
+    </div>
+</div>
+""", unsafe_allow_html=True)
+
+# Session Status Messages
 if is_pro:
-    st.info("💡 **Pro Access Active (2-Hour Window):** Bookmark this tab to keep working on your papers.")
+    st.info("💡 **Pro Access Active (2-Hour Window):** Keep this browser tab open to run and export all your documents.")
 elif st.session_state.session_expired:
-    st.warning("⚠️ **Pass Expired:** Your 2-hour Pro window has ended. Upgrade below to run new papers.")
+    st.warning("⚠️ **Pass Expired:** Your 2-hour Pro window has elapsed. Upgrade below to run new papers.")
 
 # 6. Pro Banner (Free Tier Only)
 if not is_pro:
     st.markdown(
         f"""
         <div class="pro-banner">
-            <div style="font-size: 16px; font-weight: 700; margin-bottom: 4px;">Unlock FormatForge Pro — $1.99</div>
+            <div style="font-size: 16px; font-weight: 700; margin-bottom: 4px;">Upgrade to FormatForge Pro — Only $1.99</div>
             <div style="font-size: 13px; color: #CBD5E1; margin-bottom: 12px;">Remove length caps, export pre-formatted Word documents, and access MLA, Chicago, Harvard, and IEEE styles.</div>
             <a href="{STRIPE_PAYMENT_URL}" target="_blank" style="text-decoration:none;">
-                <button style="background:#4F46E5; color:#FFF; border:none; padding:8px 16px; border-radius:8px; font-weight:600; font-size:13px; cursor:pointer;">
+                <button style="background:#4F46E5; color:#FFF; border:none; padding:8px 18px; border-radius:8px; font-weight:600; font-size:13px; cursor:pointer;">
                     Unlock All Features ($1.99)
                 </button>
             </a>
@@ -320,7 +386,7 @@ with tab_input:
     user_text = st.text_area(
         "Document Text",
         value=st.session_state.input_text,
-        height=220,
+        height=240,
         placeholder="Paste your unformatted essay or bibliography here...",
         label_visibility="collapsed"
     )
