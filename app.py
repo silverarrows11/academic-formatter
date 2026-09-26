@@ -14,94 +14,145 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
-# 2. Modern SaaS Styling
+# 2. Mobile-Optimized SaaS Styling with Contrast Fixes
 st.markdown("""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
     
     html, body, [class*="css"] {
         font-family: 'Plus Jakarta Sans', -apple-system, sans-serif;
-        color: #0F172A;
     }
+    
     #MainMenu, header, footer { visibility: hidden; }
+    
+    /* Responsive container padding */
     .block-container {
-        padding-top: 1.5rem;
+        padding-top: 1rem;
         padding-bottom: 2rem;
-        max-width: 820px;
+        padding-left: 1rem;
+        padding-right: 1rem;
+        max-width: 800px;
     }
     
-    /* Sleek gradient hero card */
-    .hero-card {
-        background: linear-gradient(135deg, #4F46E5 0%, #7C3AED 50%, #EC4899 100%);
-        padding: 28px 24px;
-        border-radius: 18px;
-        color: white;
-        margin-bottom: 24px;
-        box-shadow: 0 10px 25px -5px rgba(99, 102, 241, 0.3);
-    }
-    
-    /* Modern glowing action button */
-    div.stButton > button:first-child {
-        background: linear-gradient(135deg, #4F46E5 0%, #6366F1 100%);
-        color: white;
-        border: none;
-        border-radius: 12px;
-        padding: 12px 24px;
-        font-weight: 700;
-        font-size: 15px;
-        letter-spacing: -0.01em;
-        box-shadow: 0 4px 14px rgba(79, 70, 229, 0.4);
-        transition: transform 0.15s ease, box-shadow 0.15s ease;
-    }
-    div.stButton > button:first-child:hover {
-        transform: translateY(-1px);
-        box-shadow: 0 6px 20px rgba(79, 70, 229, 0.6);
-    }
-    
-    /* Rounded text input */
-    .stTextArea textarea {
-        border-radius: 14px !important;
-        border: 1.5px solid #E2E8F0 !important;
-        padding: 14px !important;
-        font-size: 14px !important;
-        background-color: #FAFAFA !important;
-    }
-    .stTextArea textarea:focus {
-        border-color: #6366F1 !important;
-        box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15) !important;
-    }
-    
-    /* Feature pills */
-    .feature-pill {
-        display: inline-flex;
+    /* Top Logo Bar - Adapts to light/dark themes */
+    .top-nav {
+        display: flex;
+        justify-content: space-between;
         align-items: center;
-        background: rgba(255, 255, 255, 0.2);
-        backdrop-filter: blur(8px);
-        border: 1px solid rgba(255, 255, 255, 0.3);
-        padding: 4px 10px;
+        margin-bottom: 16px;
+    }
+    .logo-text {
+        font-size: 22px;
+        font-weight: 800;
+        letter-spacing: -0.02em;
+        /* Gradient text to ensure visibility in both Light & Dark modes */
+        background: linear-gradient(135deg, #6366F1 0%, #A855F7 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+    }
+
+    /* Mobile-first Hero Card */
+    .hero-card {
+        background: linear-gradient(135deg, #1E1B4B 0%, #312E81 50%, #4338CA 100%);
+        padding: 24px 20px;
+        border-radius: 16px;
+        color: #FFFFFF !important;
+        margin-bottom: 20px;
+        box-shadow: 0 10px 25px -5px rgba(49, 46, 129, 0.4);
+    }
+    
+    .hero-card h1 {
+        color: #FFFFFF !important;
+        font-size: 24px;
+        font-weight: 800;
+        margin: 10px 0 8px 0;
+        line-height: 1.3;
+    }
+    
+    .hero-card p {
+        color: #E0E7FF !important;
+        font-size: 13.5px;
+        margin: 0;
+        line-height: 1.5;
+    }
+
+    /* Feature Pills */
+    .pill-container {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+        margin-bottom: 8px;
+    }
+    .feature-pill {
+        display: inline-block;
+        background: rgba(255, 255, 255, 0.15);
+        backdrop-filter: blur(6px);
+        border: 1px solid rgba(255, 255, 255, 0.25);
+        color: #FFFFFF !important;
+        padding: 3px 9px;
         border-radius: 999px;
         font-size: 11px;
         font-weight: 600;
-        margin-right: 6px;
+    }
+
+    /* TEXT AREA VISIBILITY FIX: Solid high-contrast colors */
+    .stTextArea textarea {
+        background-color: #F8FAFC !important;
+        color: #0F172A !important;
+        -webkit-text-fill-color: #0F172A !important;
+        border: 1.5px solid #CBD5E1 !important;
+        border-radius: 12px !important;
+        padding: 12px !important;
+        font-size: 14px !important;
+        line-height: 1.5 !important;
+    }
+    .stTextArea textarea:focus {
+        border-color: #6366F1 !important;
+        background-color: #FFFFFF !important;
+        box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2) !important;
+    }
+    .stTextArea textarea::placeholder {
+        color: #64748B !important;
+        -webkit-text-fill-color: #64748B !important;
+    }
+
+    /* Mobile Buttons */
+    div.stButton > button:first-child {
+        background: linear-gradient(135deg, #4F46E5 0%, #6366F1 100%);
+        color: #FFFFFF !important;
+        border: none;
+        border-radius: 12px;
+        padding: 12px 20px;
+        font-weight: 700;
+        font-size: 15px;
+        box-shadow: 0 4px 14px rgba(79, 70, 229, 0.35);
+        transition: all 0.15s ease-in-out;
+    }
+    div.stButton > button:first-child:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 6px 18px rgba(79, 70, 229, 0.5);
     }
     
-    .trust-card {
-        background: #F8FAFC;
-        border: 1px solid #E2E8F0;
-        border-radius: 12px;
-        padding: 16px 20px;
-        margin-top: 1.5rem;
-        font-size: 13px;
-        color: #475569;
-        line-height: 1.6;
-    }
     .pro-banner {
-        background: linear-gradient(135deg, #1E293B 0%, #0F172A 100%);
-        color: #FFFFFF;
-        padding: 20px;
+        background: linear-gradient(135deg, #0F172A 0%, #1E293B 100%);
+        border: 1px solid #334155;
+        color: #FFFFFF !important;
+        padding: 18px;
         border-radius: 14px;
         margin-bottom: 1.5rem;
     }
+    
+    .trust-card {
+        background: rgba(241, 245, 249, 0.6);
+        border: 1px solid #E2E8F0;
+        border-radius: 12px;
+        padding: 14px 16px;
+        margin-top: 1.5rem;
+        font-size: 12px;
+        color: #64748B;
+        line-height: 1.5;
+    }
+
     .badge {
         display: inline-block;
         padding: 3px 10px;
@@ -112,7 +163,13 @@ st.markdown("""
         letter-spacing: 0.04em;
     }
     .badge-pro { background: #10B981; color: #FFFFFF; }
-    .badge-free { background: #E2E8F0; color: #475569; }
+    .badge-free { background: #334155; color: #E2E8F0; }
+
+    /* Mobile fine-tuning */
+    @media (max-width: 640px) {
+        .hero-card h1 { font-size: 20px; }
+        .hero-card { padding: 18px 16px; }
+    }
     </style>
 """, unsafe_allow_html=True)
 
@@ -122,7 +179,6 @@ PRO_MAX_CHARS = 35000
 STRIPE_PAYMENT_URL = "https://buy.stripe.com/cNidRbdxg5l4c9902l5Ne01"
 DELIMITER = "---AUDIT_AND_FEEDBACK---"
 
-# Initialize Stripe API Key safely
 if "STRIPE_SECRET_KEY" in st.secrets:
     stripe.api_key = st.secrets["STRIPE_SECRET_KEY"]
 
@@ -144,14 +200,12 @@ if "input_text" not in st.session_state:
 if "session_expired" not in st.session_state:
     st.session_state.session_expired = False
 
-# Validate dynamic Stripe session parameter (?session_id=cs_...)
 session_id = st.query_params.get("session_id")
 
 if session_id and not st.session_state.is_pro:
     try:
         session = stripe.checkout.Session.retrieve(session_id)
         if session.payment_status == "paid":
-            # 2-hour window validation (7200 seconds)
             time_elapsed = time.time() - session.created
             if time_elapsed < 7200:
                 st.session_state.is_pro = True
@@ -162,12 +216,7 @@ if session_id and not st.session_state.is_pro:
 
 is_pro = st.session_state.is_pro
 
-if is_pro:
-    st.info("💡 **Pro Access Active (2-Hour Window):** Keep this browser tab open to run and export all your documents.")
-elif st.session_state.session_expired:
-    st.warning("⚠️ **Pass Expired:** Your 2-hour Pro pass has elapsed. Please purchase a new pass to process extended manuscripts.")
-
-# Helpers for File Parsing & Word Generation
+# Helper Functions
 def extract_text_from_file(uploaded_file):
     if uploaded_file.name.endswith(".docx"):
         doc = Document(uploaded_file)
@@ -198,38 +247,39 @@ def create_docx(content, title_style):
     stream.seek(0)
     return stream
 
-# 5. Header Bar & Hero Banner
+# 5. Header Bar & Brand Logo
 status_badge = '<span class="badge badge-pro">PRO ACTIVE</span>' if is_pro else '<span class="badge badge-free">FREE TRIAL</span>'
 
 st.markdown(f"""
-    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
-        <span style="font-size: 20px; font-weight: 800; color: #0F172A; letter-spacing: -0.02em;">🎓 FormatForge</span>
+    <div class="top-nav">
+        <span class="logo-text">🎓 FormatForge</span>
         <div>{status_badge}</div>
     </div>
     <div class="hero-card">
-        <div style="display: flex; gap: 8px; margin-bottom: 12px; flex-wrap: wrap;">
-            <span class="feature-pill">⚡ Instant Hanging Indents</span>
-            <span class="feature-pill">🎯 Fixes Missed Citations</span>
-            <span class="feature-pill">📑 Word .docx Ready</span>
+        <div class="pill-container">
+            <span class="feature-pill">⚡ Auto-Hanging Indents</span>
+            <span class="feature-pill">🔍 Audit Missing Sources</span>
+            <span class="feature-pill">📄 Word .docx Export</span>
         </div>
-        <h1 style="color: white; font-size: 26px; font-weight: 800; margin: 0 0 8px 0; letter-spacing: -0.02em; line-height: 1.25;">
-            Never lose grade points to citation rules again.
-        </h1>
-        <p style="color: rgba(255, 255, 255, 0.9); font-size: 14px; margin: 0; line-height: 1.5;">
-            Paste messy text, sketchy links, or raw bibliographies. Get clean APA, MLA, or Harvard styling formatted in seconds.
-        </p>
+        <h1>Never lose grade points to citation rules.</h1>
+        <p>Paste rough notes, messy links, or full bibliographies. Transform them into submission-ready academic formats in seconds.</p>
     </div>
 """, unsafe_allow_html=True)
 
-# 6. Pro Upgrade Banner (Free Tier only)
+if is_pro:
+    st.info("💡 **Pro Access Active (2-Hour Window):** Bookmark this tab to keep working on your papers.")
+elif st.session_state.session_expired:
+    st.warning("⚠️ **Pass Expired:** Your 2-hour Pro window has ended. Upgrade below to run new papers.")
+
+# 6. Pro Banner (Free Tier Only)
 if not is_pro:
     st.markdown(
         f"""
         <div class="pro-banner">
-            <div style="font-size: 17px; font-weight: 700; margin-bottom: 4px;">Upgrade to FormatForge Pro — Only $1.99</div>
-            <div style="font-size: 13px; opacity: 0.85; margin-bottom: 12px;">Remove character limits, export pre-formatted Word documents, and access MLA, Chicago, and Harvard formatting.</div>
+            <div style="font-size: 16px; font-weight: 700; margin-bottom: 4px;">Unlock FormatForge Pro — $1.99</div>
+            <div style="font-size: 13px; color: #CBD5E1; margin-bottom: 12px;">Remove length caps, export pre-formatted Word documents, and access MLA, Chicago, Harvard, and IEEE styles.</div>
             <a href="{STRIPE_PAYMENT_URL}" target="_blank" style="text-decoration:none;">
-                <button style="background:#2563EB; color:#FFF; border:none; padding:8px 18px; border-radius:8px; font-weight:600; font-size:13px; cursor:pointer;">
+                <button style="background:#4F46E5; color:#FFF; border:none; padding:8px 16px; border-radius:8px; font-weight:600; font-size:13px; cursor:pointer;">
                     Unlock All Features ($1.99)
                 </button>
             </a>
@@ -238,8 +288,8 @@ if not is_pro:
         unsafe_allow_html=True
     )
 
-# 7. Layout Tabs
-tab_input, tab_settings = st.tabs(["📝 Document Editor", "⚙️ Options & Citation Rules"])
+# 7. Document Inputs & Settings
+tab_input, tab_settings = st.tabs(["📝 Document Editor", "⚙️ Options & Style Manuals"])
 
 with tab_settings:
     st.subheader("Formatting Parameters")
@@ -248,81 +298,78 @@ with tab_settings:
             "Style Manual",
             ["APA 7th Edition", "MLA 9th Edition", "Harvard Style", "Chicago 17th Edition (Author-Date)", "IEEE"]
         )
-        audit_citations = st.toggle("Citation Integrity Check (Cross-reference body against references)", value=True)
+        audit_citations = st.toggle("Citation Integrity Check (Cross-reference in-text sources with references)", value=True)
         editorial_tips = st.toggle("Academic Tone & Phrasing Review", value=True)
     else:
         st.selectbox("Style Manual", ["APA 7th Edition (Upgrade for MLA, Chicago, Harvard)"], disabled=True)
         format_style = "APA 7th Edition"
         audit_citations = False
         editorial_tips = False
-        st.caption("🔒 Cross-checking and advanced style guides are reserved for Pro users.")
+        st.caption("🔒 Cross-checking and full style manuals are unlocked in Pro.")
 
 with tab_input:
-    action_col1, action_col2 = st.columns([1, 1])
-    with action_col1:
-        if st.button("📄 Pre-fill Sample Draft", use_container_width=True):
+    btn_col1, btn_col2 = st.columns([1, 1])
+    with btn_col1:
+        if st.button("📄 Load Sample Essay", use_container_width=True):
             st.session_state.input_text = SAMPLE_TEXT
-    with action_col2:
-        uploaded_doc = st.file_uploader("Or upload .docx / .txt", type=["docx", "txt"], label_visibility="collapsed")
+    with btn_col2:
+        uploaded_doc = st.file_uploader("Upload .docx / .txt", type=["docx", "txt"], label_visibility="collapsed")
         if uploaded_doc is not None:
             st.session_state.input_text = extract_text_from_file(uploaded_doc)
 
     user_text = st.text_area(
         "Document Text",
         value=st.session_state.input_text,
-        height=240,
-        placeholder="Paste your essay, article, or references here...",
+        height=220,
+        placeholder="Paste your unformatted essay or bibliography here...",
         label_visibility="collapsed"
     )
     
     char_len = len(user_text)
 
-    # Usage Indicator
     if not is_pro:
         st.caption(f"Characters: {char_len}/{FREE_CHAR_LIMIT} | Free runs remaining: {max(0, 1 - st.session_state.free_uses)}")
     else:
         st.caption(f"Characters: {char_len}/{PRO_MAX_CHARS:,} (Pro Unlimited)")
 
-    run_button = st.button("✨ Format & Standardize", type="primary", use_container_width=True)
+    run_button = st.button("✨ Format & Audit Document", type="primary", use_container_width=True)
 
-# 8. Execution Logic & Guardrails
+# 8. Execution Pipeline
 if run_button:
     if not user_text.strip():
         st.warning("Please paste or upload text first.")
     elif not is_pro and st.session_state.free_uses >= 1:
-        st.error("Free trial limit reached. Upgrade to Pro ($1.99) above for unlimited usage.")
+        st.error("Free trial limit reached. Upgrade to Pro ($1.99) above to format your complete paper.")
     elif not is_pro and char_len > FREE_CHAR_LIMIT:
-        st.error(f"Text exceeds the {FREE_CHAR_LIMIT}-character limit. Shorten your input or upgrade to Pro.")
+        st.error(f"Text exceeds the {FREE_CHAR_LIMIT}-character free limit. Please shorten your text or upgrade to Pro.")
     elif is_pro and char_len > PRO_MAX_CHARS:
-        st.error(f"Input exceeds the safety ceiling of {PRO_MAX_CHARS:,} characters (~6,000 words). Please process longer manuscripts in separate sections.")
+        st.error(f"Manuscript exceeds {PRO_MAX_CHARS:,} characters. Please submit chapter by chapter.")
     else:
         client = openai.OpenAI(api_key=st.secrets["OPENAI_API_KEY"])
 
         with st.status("Analyzing and formatting...", expanded=True) as status_box:
-            st.write("🔍 Parsing text and checking citation references...")
+            st.write("🔍 Standardizing citation conventions...")
             
             instructions = []
             if is_pro and audit_citations:
-                instructions.append("- Cross-examine all in-text citations against the bibliography. List missing items.")
+                instructions.append("- Check in-text citations against the reference list. Note any missing entries.")
             if is_pro and editorial_tips:
-                instructions.append("- Provide 3-4 bulleted suggestions to eliminate informal language or passive voice.")
+                instructions.append("- Provide 3 concise suggestions to improve formal academic tone and eliminate passive voice.")
 
             system_message = f"""
             You are a university academic copyeditor. Reformat the user's input strictly according to {format_style} standards.
-            Alphabetize reference lists and verify proper capitalization and author layout.
-            Do not alter the user's argument or core meaning.
+            Alphabetize reference lists and verify proper capitalization, author syntax, and hanging indent layouts.
+            Do not alter the user's underlying research arguments.
 
-            Formatting Rules:
+            Output Format:
             1. Output ONLY the clean, formatted academic paper first.
-            2. If reporting citation integrity issues or editorial critiques, place this exact separator on its own line:
+            2. If reporting citation discrepancies or tone suggestions, add this exact separator on a line by itself:
             {DELIMITER}
-            3. Put all audit notes and suggestions below that separator under clear headings.
+            3. Provide the audit notes and suggestions below the separator.
             
             {chr(10).join(instructions)}
             """
 
-            st.write(f"📐 Applying {format_style} conventions...")
-            
             try:
                 response = client.chat.completions.create(
                     model="gpt-4o-mini",
@@ -335,18 +382,18 @@ if run_button:
                 output_content = response.choices[0].message.content
                 if not is_pro:
                     st.session_state.free_uses += 1
-                status_box.update(label="Document processed successfully!", state="complete", expanded=False)
+                status_box.update(label="Complete!", state="complete", expanded=False)
             except openai.APIConnectionError:
                 status_box.update(label="Network error", state="error")
-                st.error("Could not reach the AI formatting engine. Please check your connection and try again.")
+                st.error("Unable to reach the AI engine. Check your connection and try again.")
                 st.stop()
             except openai.RateLimitError:
                 status_box.update(label="System busy", state="error")
-                st.error("The system is receiving high traffic right now. Please wait 15 seconds and click 'Format' again.")
+                st.error("System traffic is high. Please wait 15 seconds and try again.")
                 st.stop()
             except Exception:
-                status_box.update(label="Processing error", state="error")
-                st.error("An unexpected error occurred while formatting. Please verify your input and try again.")
+                status_box.update(label="Error", state="error")
+                st.error("An error occurred during formatting. Please verify your text.")
                 st.stop()
 
         # 9. Deliverables Display
@@ -360,30 +407,28 @@ if run_button:
             clean_text = output_content.strip()
             editorial_notes = ""
 
-        st.text_area("Copy Formatted Text:", value=clean_text, height=260)
+        st.text_area("Copy Output:", value=clean_text, height=260)
 
         if is_pro:
             docx_output = create_docx(clean_text, format_style)
             st.download_button(
-                label="📥 Download Standardized .docx File",
+                label="📥 Download .docx File (Double-Spaced & 1-in Margins)",
                 data=docx_output,
-                file_name="academic_formatted_paper.docx",
+                file_name="formatted_paper.docx",
                 mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
                 use_container_width=True
             )
         
         if editorial_notes:
-            st.markdown("### Editorial & Audit Reports")
+            st.markdown("### Editorial & Citation Audit")
             st.markdown(editorial_notes)
 
-# 10. Trust, Security & Academic Integrity Footer
+# 10. Privacy & Integrity Notice
 st.markdown(
     """
     <div class="trust-card">
-        <b>Data Protection & Security:</b> Documents are processed in volatile memory and never stored, indexed, or shared. 
-        Transactions are securely processed with 256-bit Stripe encryption.<br><br>
-        <b>Academic Integrity Notice:</b> FormatForge is strictly an editorial and citation standardization tool. 
-        It does not research, ghostwrite, or generate original arguments on behalf of students.
+        <b>Data Privacy:</b> Documents are processed in volatile memory and are never saved or trained on. Payments are handled via Stripe 256-bit encryption.<br>
+        <b>Academic Integrity:</b> FormatForge formats layout and citations only. It does not generate arguments or write papers for students.
     </div>
     """,
     unsafe_allow_html=True
