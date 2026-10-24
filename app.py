@@ -10,160 +10,149 @@ from docx.shared import Inches, Pt
 # 1. Page Configuration
 st.set_page_config(
     page_title="FormatForge | Academic Suite",
-    page_icon="🎓",
+    page_icon="✦",
     layout="centered",
     initial_sidebar_state="collapsed"
 )
 
-# 2. Modern SaaS Styling
+# 2. Modern 2026 SaaS Styling (Minimalist, High-Trust)
 st.markdown("""
     <style>
-    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,600;0,700;1,600&family=Inter:wght@400;500;600;700&display=swap');
     
     html, body, [class*="css"] {
-        font-family: 'Plus Jakarta Sans', -apple-system, sans-serif;
+        font-family: 'Inter', -apple-system, sans-serif;
+    }
+    
+    h1, h2, h3, .serif-text {
+        font-family: 'Playfair Display', serif !important;
     }
     
     #MainMenu, header, footer { visibility: hidden; }
     
     .block-container {
-        padding-top: 1rem;
-        padding-bottom: 2rem;
-        padding-left: 1rem;
-        padding-right: 1rem;
-        max-width: 820px;
+        padding-top: 2rem;
+        padding-bottom: 3rem;
+        max-width: 860px;
     }
     
+    /* Top Logo Bar */
     .top-nav {
         display: flex;
         justify-content: space-between;
         align-items: center;
-        margin-bottom: 16px;
+        margin-bottom: 24px;
+        padding-bottom: 16px;
+        border-bottom: 1px solid #E2E8F0;
     }
     .logo-text {
-        font-size: 22px;
-        font-weight: 800;
+        font-family: 'Playfair Display', serif;
+        font-size: 24px;
+        font-weight: 700;
+        color: #0F172A;
         letter-spacing: -0.02em;
-        background: linear-gradient(135deg, #6366F1 0%, #A855F7 100%);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
     }
 
+    /* Oxford Slate Hero Card */
     .hero-card {
-        background: linear-gradient(-45deg, #1E1B4B, #312E81, #4338CA, #6366F1);
-        background-size: 300% 300%;
-        animation: gradientShift 10s ease infinite;
-        padding: 26px 22px;
-        border-radius: 18px;
+        background-color: #0B1120;
+        padding: 40px 32px;
+        border-radius: 12px;
         color: #FFFFFF !important;
-        margin-bottom: 18px;
-        box-shadow: 0 12px 30px -6px rgba(79, 70, 229, 0.45);
-    }
-    
-    @keyframes gradientShift {
-        0% { background-position: 0% 50%; }
-        50% { background-position: 100% 50%; }
-        100% { background-position: 0% 50%; }
+        margin-bottom: 24px;
+        text-align: center;
+        border: 1px solid #1E293B;
+        box-shadow: 0 4px 24px -6px rgba(11, 17, 32, 0.4);
     }
     
     .hero-card h1 {
         color: #FFFFFF !important;
-        font-size: 25px;
-        font-weight: 800;
-        margin: 10px 0 8px 0;
-        line-height: 1.25;
-        letter-spacing: -0.02em;
+        font-size: 36px;
+        font-weight: 600;
+        margin: 0 0 16px 0;
+        line-height: 1.2;
+        letter-spacing: -0.01em;
     }
     
     .hero-card p {
-        color: #E0E7FF !important;
-        font-size: 13.5px;
-        margin: 0;
-        line-height: 1.5;
+        color: #94A3B8 !important;
+        font-size: 15px;
+        margin: 0 auto;
+        max-width: 600px;
+        line-height: 1.6;
     }
 
-    .pill-container {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 6px;
-        margin-bottom: 8px;
-    }
-    .feature-pill {
-        display: inline-block;
-        background: rgba(255, 255, 255, 0.15);
-        backdrop-filter: blur(6px);
-        border: 1px solid rgba(255, 255, 255, 0.25);
-        color: #FFFFFF !important;
-        padding: 3px 9px;
-        border-radius: 999px;
-        font-size: 11px;
-        font-weight: 600;
-    }
-
-    .stTextArea textarea {
-        background-color: #F8FAFC !important;
-        color: #0F172A !important;
-        -webkit-text-fill-color: #0F172A !important;
-        border: 1.5px solid #CBD5E1 !important;
-        border-radius: 14px !important;
-        padding: 14px !important;
-        font-size: 14px !important;
-        line-height: 1.5 !important;
-    }
-    .stTextArea textarea:focus {
-        border-color: #6366F1 !important;
-        background-color: #FFFFFF !important;
-        box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2) !important;
-    }
-    
-    div.stButton > button:first-child {
-        background: linear-gradient(135deg, #4F46E5 0%, #7C3AED 100%) !important;
-        color: #FFFFFF !important;
-        border: none !important;
-        border-radius: 12px !important;
-        padding: 14px 20px !important;
-        font-weight: 700 !important;
-        font-size: 15px !important;
-        letter-spacing: -0.01em !important;
-        box-shadow: 0 4px 18px rgba(99, 102, 241, 0.45) !important;
-        transition: transform 0.15s ease, box-shadow 0.15s ease !important;
-    }
-    div.stButton > button:first-child:hover {
-        transform: translateY(-2px) scale(1.01) !important;
-        box-shadow: 0 8px 24px rgba(99, 102, 241, 0.65) !important;
-    }
-    
-    .pro-banner {
-        background: linear-gradient(135deg, #0F172A 0%, #1E293B 100%);
-        border: 1px solid #334155;
-        color: #FFFFFF !important;
-        padding: 18px;
-        border-radius: 14px;
-        margin-bottom: 1.5rem;
-    }
-    
-    .trust-card {
-        background: rgba(241, 245, 249, 0.6);
-        border: 1px solid #E2E8F0;
-        border-radius: 12px;
-        padding: 14px 16px;
-        margin-top: 1.5rem;
-        font-size: 12px;
-        color: #64748B;
-        line-height: 1.5;
-    }
-
+    /* Minimalist Badges */
     .badge {
         display: inline-block;
-        padding: 3px 10px;
-        border-radius: 999px;
+        padding: 4px 12px;
+        border-radius: 6px;
         font-size: 11px;
-        font-weight: 700;
+        font-weight: 600;
         text-transform: uppercase;
-        letter-spacing: 0.04em;
+        letter-spacing: 0.05em;
     }
-    .badge-pro { background: #10B981; color: #FFFFFF; }
-    .badge-free { background: #334155; color: #E2E8F0; }
+    .badge-pro { background: #047857; color: #FFFFFF; border: 1px solid #065F46; }
+    .badge-free { background: #F1F5F9; color: #475569; border: 1px solid #E2E8F0; }
+
+    /* High-Contrast Inputs */
+    .stTextArea textarea {
+        background-color: #FAFAF9 !important;
+        color: #09090B !important;
+        -webkit-text-fill-color: #09090B !important;
+        border: 1px solid #D4D4D8 !important;
+        border-radius: 8px !important;
+        padding: 16px !important;
+        font-size: 14px !important;
+        line-height: 1.6 !important;
+        box-shadow: inset 0 2px 4px rgba(0,0,0,0.02) !important;
+    }
+    .stTextArea textarea:focus {
+        border-color: #09090B !important;
+        background-color: #FFFFFF !important;
+        box-shadow: 0 0 0 1px #09090B !important;
+    }
+
+    /* Executive Black Action Buttons */
+    div.stButton > button:first-child {
+        background: #09090B !important;
+        color: #FFFFFF !important;
+        border: 1px solid #09090B !important;
+        border-radius: 8px !important;
+        padding: 12px 24px !important;
+        font-weight: 500 !important;
+        font-size: 14px !important;
+        transition: all 0.2s ease !important;
+        box-shadow: 0 4px 12px rgba(9, 9, 11, 0.15) !important;
+    }
+    div.stButton > button:first-child:hover {
+        background: #27272A !important;
+        border-color: #27272A !important;
+        transform: translateY(-1px) !important;
+    }
+    
+    /* Pro Banner */
+    .pro-banner {
+        background: #FAFAF9;
+        border: 1px solid #E5E7EB;
+        padding: 24px;
+        border-radius: 12px;
+        margin-bottom: 24px;
+        text-align: center;
+    }
+    
+    /* Trust Text */
+    .privacy-text {
+        text-align: center; 
+        font-size: 12px; 
+        font-weight: 500;
+        color: #059669; 
+        margin-bottom: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+    }
     </style>
 """, unsafe_allow_html=True)
 
@@ -247,7 +236,6 @@ def create_docx(content, title_style):
         p.paragraph_format.left_indent = Inches(0.5)
         p.paragraph_format.first_line_indent = Inches(-0.5)
         
-        # Parse basic markdown italics (*text* or _text_)
         parts = re.split(r'(\*.*?\*|_.*?_)', para_text)
         for part in parts:
             if part.startswith(('*', '_')) and part.endswith(('*', '_')) and len(part) > 2:
@@ -264,93 +252,140 @@ def create_docx(content, title_style):
     return stream
 
 # 5. Header Bar & Hero Banner
-status_badge = '<span class="badge badge-pro">PRO ACTIVE</span>' if is_pro else '<span class="badge badge-free">FREE TRIAL</span>'
+status_badge = '<span class="badge badge-pro">Pro Access Active</span>' if is_pro else '<span class="badge badge-free">Free Trial</span>'
 
 st.markdown(f"""
     <div class="top-nav">
-        <span class="logo-text">🎓 FormatForge</span>
+        <span class="logo-text">FormatForge.</span>
         <div>{status_badge}</div>
     </div>
     <div class="hero-card">
-        <div class="pill-container">
-            <span class="feature-pill">⚡ Auto-Hanging Indents</span>
-            <span class="feature-pill">🔍 Audit Missing Sources</span>
-            <span class="feature-pill">📄 Word .docx Export</span>
-        </div>
-        <h1>Never lose grade points to citation rules.</h1>
-        <p>Paste rough notes, messy links, or full bibliographies. Transform them into submission-ready academic formats in seconds.</p>
+        <h1>Zero citation errors.<br>Perfect formatting.</h1>
+        <p>Transform rough drafts and messy bibliographies into submission-ready academic documents in seconds. Built for strict university rubrics.</p>
     </div>
+""", unsafe_allow_html=True)
+
+# Minimalist University Social Proof
+st.markdown("""
+<div style="text-align: center; margin-bottom: 32px;">
+    <div style="font-size: 11px; font-weight: 600; color: #94A3B8; letter-spacing: 0.05em; text-transform: uppercase; margin-bottom: 12px;">
+        Strictly compliant with guidelines from
+    </div>
+    <div class="serif-text" style="display: flex; justify-content: center; gap: 24px; flex-wrap: wrap; font-size: 15px; color: #475569; font-style: italic;">
+        <span>Oxford</span>
+        <span>Harvard</span>
+        <span>NYU</span>
+        <span>Toronto</span>
+        <span>Melbourne</span>
+    </div>
+</div>
+""", unsafe_allow_html=True)
+
+# High-Contrast Roadmap
+st.markdown("""
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 16px; margin-bottom: 32px;">
+    <div style="background: #FFFFFF; border: 1px solid #E2E8F0; padding: 16px; border-radius: 8px;">
+        <div style="font-size: 12px; font-weight: 600; color: #94A3B8; margin-bottom: 4px;">01</div>
+        <div style="font-weight: 600; font-size: 14px; color: #0F172A; margin-bottom: 2px;">Input Draft</div>
+        <div style="font-size: 13px; color: #64748B;">Paste raw text or upload .docx</div>
+    </div>
+    <div style="background: #FFFFFF; border: 1px solid #E2E8F0; padding: 16px; border-radius: 8px;">
+        <div style="font-size: 12px; font-weight: 600; color: #94A3B8; margin-bottom: 4px;">02</div>
+        <div style="font-weight: 600; font-size: 14px; color: #0F172A; margin-bottom: 2px;">Select Manual</div>
+        <div style="font-size: 13px; color: #64748B;">Choose APA, MLA, or Harvard</div>
+    </div>
+    <div style="background: #FFFFFF; border: 1px solid #E2E8F0; padding: 16px; border-radius: 8px;">
+        <div style="font-size: 12px; font-weight: 600; color: #94A3B8; margin-bottom: 4px;">03</div>
+        <div style="font-weight: 600; font-size: 14px; color: #0F172A; margin-bottom: 2px;">Export Document</div>
+        <div style="font-size: 13px; color: #64748B;">Receive clean .docx instantly</div>
+    </div>
+</div>
 """, unsafe_allow_html=True)
 
 # Session Status Messages
 if is_pro:
-    st.info("💡 **Pro Access Active (2-Hour Window):** Keep this browser tab open to run and export all your documents.")
+    st.info("Your Pro session is active. Keep this browser tab open to run and export all your documents.")
 elif st.session_state.session_expired:
-    st.warning("⚠️ **Pass Expired:** Your 2-hour Pro window has elapsed. Upgrade below to run new papers.")
+    st.warning("Your Pro window has elapsed. Upgrade below to run new papers.")
 
 if not is_pro:
     st.markdown(
         f"""
         <div class="pro-banner">
-            <div style="font-size: 16px; font-weight: 700; margin-bottom: 4px;">Upgrade to FormatForge Pro — Only $1.99</div>
-            <div style="font-size: 13px; color: #CBD5E1; margin-bottom: 12px;">Remove length caps, export pre-formatted Word documents, and access MLA, Chicago, Harvard, and IEEE styles.</div>
+            <div style="font-size: 18px; font-weight: 700; color: #0F172A; margin-bottom: 6px;">FormatForge Pro</div>
+            <div style="font-size: 14px; color: #475569; margin-bottom: 16px; max-width: 400px; margin-left: auto; margin-right: auto;">
+                Export perfect, rubric-compliant Word documents in one click. Remove all length caps and access premium style manuals. Cancel anytime.
+            </div>
             <a href="{STRIPE_PAYMENT_URL}" target="_blank" style="text-decoration:none;">
-                <button style="background:#4F46E5; color:#FFF; border:none; padding:8px 18px; border-radius:8px; font-weight:600; font-size:13px; cursor:pointer;">
+                <button style="background:#09090B; color:#FFF; border:none; padding:12px 24px; border-radius:6px; font-weight:500; font-size:14px; cursor:pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
                     Unlock All Features ($1.99)
                 </button>
             </a>
+            <div style="font-size: 11px; color: #64748B; margin-top: 12px; display: flex; align-items: center; justify-content: center; gap: 4px;">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+                Secure 256-bit checkout via Stripe
+            </div>
         </div>
         """,
         unsafe_allow_html=True
     )
 
-# 6. Document Inputs & Settings
-tab_input, tab_settings = st.tabs(["📝 Document Editor", "⚙️ Options & Style Manuals"])
+# 6. Bento Grid Document Inputs & Settings
+col1, col2 = st.columns([2.5, 1.5], gap="large")
 
-with tab_settings:
-    st.subheader("Formatting Parameters")
-    if is_pro:
-        format_style = st.selectbox(
-            "Style Manual",
-            ["APA 7th Edition", "MLA 9th Edition", "Harvard Style", "Chicago 17th Edition (Author-Date)", "IEEE"]
+with col2:
+    with st.container(border=True):
+        st.markdown("<div style='font-weight: 600; margin-bottom: 12px; font-size: 15px;'>Formatting Settings</div>", unsafe_allow_html=True)
+        if is_pro:
+            format_style = st.selectbox(
+                "Style Manual",
+                ["APA 7th Edition", "MLA 9th Edition", "Harvard Style", "Chicago 17th Edition", "IEEE"],
+                label_visibility="collapsed"
+            )
+            audit_citations = st.toggle("Citation Integrity Check", value=True)
+            editorial_tips = st.toggle("Tone & Phrasing Review", value=True)
+        else:
+            st.selectbox("Style Manual", ["APA 7th Edition (Upgrade for more)"], disabled=True, label_visibility="collapsed")
+            format_style = "APA 7th Edition"
+            audit_citations = False
+            editorial_tips = False
+            st.caption("Cross-checking and full style manuals unlock in Pro.")
+
+with col1:
+    with st.container(border=True):
+        btn_col1, btn_col2 = st.columns([1, 1])
+        with btn_col1:
+            if st.button("Load Sample Data", use_container_width=True):
+                st.session_state.input_text = SAMPLE_TEXT
+        with btn_col2:
+            uploaded_doc = st.file_uploader("Upload .docx", type=["docx", "txt"], label_visibility="collapsed")
+            if uploaded_doc is not None and uploaded_doc.name != st.session_state.last_uploaded_file:
+                st.session_state.input_text = extract_text_from_file(uploaded_doc)
+                st.session_state.last_uploaded_file = uploaded_doc.name
+
+        user_text = st.text_area(
+            "Document Text",
+            value=st.session_state.input_text,
+            height=260,
+            placeholder="Paste your unformatted essay or bibliography here...",
+            label_visibility="collapsed"
         )
-        audit_citations = st.toggle("Citation Integrity Check", value=True)
-        editorial_tips = st.toggle("Academic Tone & Phrasing Review", value=True)
-    else:
-        st.selectbox("Style Manual", ["APA 7th Edition (Upgrade for MLA, Chicago, Harvard)"], disabled=True)
-        format_style = "APA 7th Edition"
-        audit_citations = False
-        editorial_tips = False
-        st.caption("🔒 Cross-checking and full style manuals are unlocked in Pro.")
+        
+        char_len = len(user_text)
+        if not is_pro:
+            st.caption(f"Characters: {char_len}/{FREE_CHAR_LIMIT} | Free runs remaining: {max(0, 1 - st.session_state.free_uses)}")
+        else:
+            st.caption(f"Characters: {char_len}/{PRO_MAX_CHARS:,} (Pro Unlimited)")
 
-with tab_input:
-    btn_col1, btn_col2 = st.columns([1, 1])
-    with btn_col1:
-        if st.button("📄 Load Sample Essay", use_container_width=True):
-            st.session_state.input_text = SAMPLE_TEXT
-    with btn_col2:
-        uploaded_doc = st.file_uploader("Upload .docx / .txt", type=["docx", "txt"], label_visibility="collapsed")
-        # Fix #2: Only extract if it's a newly uploaded file
-        if uploaded_doc is not None and uploaded_doc.name != st.session_state.last_uploaded_file:
-            st.session_state.input_text = extract_text_from_file(uploaded_doc)
-            st.session_state.last_uploaded_file = uploaded_doc.name
+# Zero-Retention Guarantee & Run Action
+st.markdown("""
+    <div class="privacy-text">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
+        Zero-Retention AI: Your text is processed in memory and immediately deleted. Never stored or used for training.
+    </div>
+""", unsafe_allow_html=True)
 
-    user_text = st.text_area(
-        "Document Text",
-        value=st.session_state.input_text,
-        height=240,
-        placeholder="Paste your unformatted essay or bibliography here...",
-        label_visibility="collapsed"
-    )
-    
-    char_len = len(user_text)
-
-    if not is_pro:
-        st.caption(f"Characters: {char_len}/{FREE_CHAR_LIMIT} | Free runs remaining: {max(0, 1 - st.session_state.free_uses)}")
-    else:
-        st.caption(f"Characters: {char_len}/{PRO_MAX_CHARS:,} (Pro Unlimited)")
-
-    run_button = st.button("✨ Format & Audit Document", type="primary", use_container_width=True)
+run_button = st.button("Format Document", type="primary", use_container_width=True)
 
 # 7. Execution Pipeline
 if run_button:
@@ -365,14 +400,14 @@ if run_button:
     else:
         client = openai.OpenAI(api_key=st.secrets["OPENAI_API_KEY"])
 
-        with st.status("Analyzing and formatting...", expanded=True) as status_box:
-            st.write("🔍 Standardizing citation conventions...")
+        with st.status("Analyzing and formatting manuscript...", expanded=True) as status_box:
+            st.write("Standardizing citation conventions...")
             
             instructions = []
             if is_pro and audit_citations:
                 instructions.append("- Check in-text citations against the reference list. Note any missing entries.")
             if is_pro and editorial_tips:
-                instructions.append("- Provide 3 concise suggestions to improve formal academic tone and eliminate passive voice.")
+                instructions.append("- Provide 3 concise suggestions to improve formal academic tone.")
 
             system_message = f"""
             You are a university academic copyeditor. Reformat the user's input strictly according to {format_style} standards.
@@ -399,7 +434,6 @@ if run_button:
                 )
                 output_content = response.choices[0].message.content
                 
-                # Fix #1: Save to session state instead of displaying instantly
                 if DELIMITER in output_content:
                     clean, notes = output_content.split(DELIMITER, 1)
                     st.session_state.clean_text = clean.strip()
@@ -410,7 +444,7 @@ if run_button:
                     
                 if not is_pro:
                     st.session_state.free_uses += 1
-                status_box.update(label="Complete!", state="complete", expanded=False)
+                status_box.update(label="Document formatted successfully", state="complete", expanded=False)
                 st.rerun()
                 
             except openai.APIConnectionError:
@@ -425,31 +459,22 @@ if run_button:
 
 # 8. Deliverables Display (Independent of Run Button)
 if st.session_state.clean_text:
-    st.markdown("### Formatted Deliverable")
-    st.text_area("Copy Output:", value=st.session_state.clean_text, height=260)
+    st.markdown("---")
+    st.markdown("<h2 class='serif-text'>Formatted Deliverable</h2>", unsafe_allow_html=True)
+    
+    st.text_area("Copy Output:", value=st.session_state.clean_text, height=300, label_visibility="collapsed")
 
     if is_pro:
-        # Fix #3: docx_output now processes actual hanging indents
         docx_output = create_docx(st.session_state.clean_text, format_style)
         st.download_button(
-            label="📥 Download .docx File (Double-Spaced & 1-in Margins)",
+            label="Download .docx Document",
             data=docx_output,
-            file_name="formatted_paper.docx",
+            file_name="Formatted_Manuscript.docx",
             mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
             use_container_width=True
         )
     
     if st.session_state.editorial_notes:
-        st.markdown("### Editorial & Citation Audit")
-        st.markdown(st.session_state.editorial_notes)
-
-# 9. Privacy Notice
-st.markdown(
-    """
-    <div class="trust-card">
-        <b>Data Privacy:</b> Documents are processed in volatile memory and are never saved or trained on. Payments are handled via Stripe 256-bit encryption.<br>
-        <b>Academic Integrity:</b> FormatForge formats layout and citations only. It does not generate arguments or write papers for students.
-    </div>
-    """,
-    unsafe_allow_html=True
-)
+        with st.container(border=True):
+            st.markdown("### Editorial & Citation Audit")
+            st.markdown(st.session_state.editorial_notes)
