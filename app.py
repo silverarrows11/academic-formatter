@@ -49,7 +49,7 @@ st.markdown("""
         font-family: 'Playfair Display', serif;
         font-size: 24px;
         font-weight: 700;
-        color: var(--text-color) !important; /* Adapts to light/dark mode */
+        color: var(--text-color) !important;
         letter-spacing: -0.02em;
     }
 
@@ -319,7 +319,9 @@ def format_editor_modal():
                         
                     if not is_pro:
                         st.session_state.free_uses += 1
-                        
+                    
+                    st.toast("✅ Manuscript successfully formatted!", icon="✦")
+                    time.sleep(1)
                     st.rerun() # Closes modal and updates main page
                     
                 except Exception:
@@ -367,6 +369,27 @@ st.markdown("""
 </div>
 """, unsafe_allow_html=True)
 
+# Visual Proof Block
+st.markdown("""
+<div style="margin-top: 40px; margin-bottom: 40px;">
+    <h3 class="serif-text" style="text-align: center; margin-bottom: 24px; font-size: 20px;">See the Transformation</h3>
+    <div style="display: flex; flex-wrap: wrap; gap: 16px; background: var(--secondary-background-color, #FAFAF9); padding: 24px; border-radius: 12px; border: 1px solid var(--border-color, #E2E8F0);">
+        <div style="flex: 1; min-width: 250px;">
+            <div style="font-size: 11px; font-weight: 700; color: #DC2626; text-transform: uppercase; margin-bottom: 8px;">Messy Input</div>
+            <div style="font-family: monospace; font-size: 13px; color: #64748B; background: #FFFFFF; padding: 16px; border-radius: 6px; border: 1px dashed #CBD5E1;">
+                smith 2021 blue light sleep study www.sleepjournal.org/art12
+            </div>
+        </div>
+        <div style="flex: 1; min-width: 250px;">
+            <div style="font-size: 11px; font-weight: 700; color: #059669; text-transform: uppercase; margin-bottom: 8px;">Perfect APA 7th Export</div>
+            <div style="font-family: 'Times New Roman', serif; font-size: 15px; color: #0F172A; background: #FFFFFF; padding: 16px; border-radius: 6px; border: 1px solid #E2E8F0; padding-left: 32px; text-indent: -16px;">
+                Smith, J. (2021). <i>Blue light and circadian rhythms</i>. Journal of Sleep Health, 15(2), 104–112.
+            </div>
+        </div>
+    </div>
+</div>
+""", unsafe_allow_html=True)
+
 if not is_pro:
     st.markdown(
         f"""
@@ -380,6 +403,10 @@ if not is_pro:
                     Unlock All Features ($1.99)
                 </button>
             </a>
+            <div style="font-size: 11px; color: #64748B; margin-top: 12px; display: flex; align-items: center; justify-content: center; gap: 4px;">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+                Secure 256-bit checkout via Stripe
+            </div>
         </div>
         """,
         unsafe_allow_html=True
@@ -407,3 +434,14 @@ if st.session_state.clean_text:
         with st.container(border=True):
             st.markdown("### Editorial & Citation Audit")
             st.markdown(st.session_state.editorial_notes)
+
+# 8. Footer
+st.markdown("""
+<div style="margin-top: 64px; padding-top: 24px; border-top: 1px solid var(--border-color, #E2E8F0); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px; font-size: 13px; color: #64748B;">
+    <div>© 2026 FormatForge Suite. All rights reserved.</div>
+    <div style="display: flex; gap: 16px;">
+        <a href="#" style="color: #64748B; text-decoration: none;">Privacy</a>
+        <a href="#" style="color: #64748B; text-decoration: none;">Terms</a>
+    </div>
+</div>
+""", unsafe_allow_html=True)
