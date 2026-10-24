@@ -1,5 +1,6 @@
 import io
 import time
+import re
 import streamlit as st
 import openai
 import stripe
@@ -14,7 +15,7 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
-# 2. Modern SaaS Styling with Theme Contrast & Responsive Polish
+# 2. Modern SaaS Styling
 st.markdown("""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
@@ -33,7 +34,6 @@ st.markdown("""
         max-width: 820px;
     }
     
-    /* Top Logo Bar */
     .top-nav {
         display: flex;
         justify-content: space-between;
@@ -49,7 +49,6 @@ st.markdown("""
         -webkit-text-fill-color: transparent;
     }
 
-    /* Animated Gradient Hero Mesh */
     .hero-card {
         background: linear-gradient(-45deg, #1E1B4B, #312E81, #4338CA, #6366F1);
         background-size: 300% 300%;
@@ -83,7 +82,6 @@ st.markdown("""
         line-height: 1.5;
     }
 
-    /* Feature Pills */
     .pill-container {
         display: flex;
         flex-wrap: wrap;
@@ -102,7 +100,6 @@ st.markdown("""
         font-weight: 600;
     }
 
-    /* High-Contrast Inputs (Solves Dark/Light Mode Invisibility) */
     .stTextArea textarea {
         background-color: #F8FAFC !important;
         color: #0F172A !important;
@@ -118,12 +115,7 @@ st.markdown("""
         background-color: #FFFFFF !important;
         box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2) !important;
     }
-    .stTextArea textarea::placeholder {
-        color: #64748B !important;
-        -webkit-text-fill-color: #64748B !important;
-    }
-
-    /* Glowing Action Buttons */
+    
     div.stButton > button:first-child {
         background: linear-gradient(135deg, #4F46E5 0%, #7C3AED 100%) !important;
         color: #FFFFFF !important;
@@ -172,11 +164,6 @@ st.markdown("""
     }
     .badge-pro { background: #10B981; color: #FFFFFF; }
     .badge-free { background: #334155; color: #E2E8F0; }
-
-    @media (max-width: 640px) {
-        .hero-card h1 { font-size: 20px; }
-        .hero-card { padding: 18px 16px; }
-    }
     </style>
 """, unsafe_allow_html=True)
 
@@ -197,7 +184,7 @@ References:
 Smith, John. (2021). Blue light and circadian rhythms. Journal of Sleep Health, 15(2), 104-112.
 johnson, m., & Lee, T. 2019. Social media addiction in secondary school students. Adolescent Psychology Review 8(4): 45-59."""
 
-# 4. State Management & Dynamic Stripe Session Verification
+# 4. State Management
 if "is_pro" not in st.session_state:
     st.session_state.is_pro = False
 if "free_uses" not in st.session_state:
@@ -206,8 +193,13 @@ if "input_text" not in st.session_state:
     st.session_state.input_text = ""
 if "session_expired" not in st.session_state:
     st.session_state.session_expired = False
+if "last_uploaded_file" not in st.session_state:
+    st.session_state.last_uploaded_file = None
+if "clean_text" not in st.session_state:
+    st.session_state.clean_text = None
+if "editorial_notes" not in st.session_state:
+    st.session_state.editorial_notes = None
 
-# Auto-verify session via Stripe API redirect parameter (?session_id=cs_...)
 session_id = st.query_params.get("session_id")
 
 if session_id and not st.session_state.is_pro:
@@ -215,7 +207,7 @@ if session_id and not st.session_state.is_pro:
         session = stripe.checkout.Session.retrieve(session_id)
         if session.payment_status == "paid":
             time_elapsed = time.time() - session.created
-            if time_elapsed < 7200:  # 2-Hour Pro window
+            if time_elapsed < 7200:
                 st.session_state.is_pro = True
             else:
                 st.session_state.session_expired = True
@@ -244,11 +236,27 @@ def create_docx(content, title_style):
     head_run = head.add_run(f"Formatted Output ({title_style})\n\n")
     head_run.bold = True
     
-    body = doc.add_paragraph()
-    body_run = body.add_run(content)
-    body_run.font.name = "Times New Roman"
-    body_run.font.size = Pt(12)
-    body.paragraph_format.line_spacing = 2.0
+    paragraphs = content.split('\n')
+    
+    for para_text in paragraphs:
+        if not para_text.strip():
+            continue
+            
+        p = doc.add_paragraph()
+        p.paragraph_format.line_spacing = 2.0
+        p.paragraph_format.left_indent = Inches(0.5)
+        p.paragraph_format.first_line_indent = Inches(-0.5)
+        
+        # Parse basic markdown italics (*text* or _text_)
+        parts = re.split(r'(\*.*?\*|_.*?_)', para_text)
+        for part in parts:
+            if part.startswith(('*', '_')) and part.endswith(('*', '_')) and len(part) > 2:
+                run = p.add_run(part[1:-1])
+                run.italic = True
+            else:
+                run = p.add_run(part)
+            run.font.name = "Times New Roman"
+            run.font.size = Pt(12)
     
     stream = io.BytesIO()
     doc.save(stream)
@@ -274,70 +282,12 @@ st.markdown(f"""
     </div>
 """, unsafe_allow_html=True)
 
-# Visual Upgrade 1: Interactive Transformation Preview Card
-st.markdown("""
-<div style="background: #FFFFFF; border: 1px solid #E2E8F0; border-radius: 14px; padding: 14px 18px; margin-bottom: 20px; box-shadow: 0 4px 12px rgba(0,0,0,0.03);">
-    <div style="font-size: 11px; font-weight: 700; color: #64748B; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 8px;">Instant Transformation</div>
-    <div style="display: grid; grid-template-columns: 1fr auto 1fr; gap: 10px; align-items: center; font-size: 12px; line-height: 1.4;">
-        <div style="background: #FEE2E2; color: #991B1B; padding: 8px 10px; border-radius: 8px; font-family: monospace;">
-            ❌ smith 2021 blue light sleep study www.sleepjournal.org/art12
-        </div>
-        <div style="color: #6366F1; font-weight: 800; font-size: 16px;">➔</div>
-        <div style="background: #DCFCE7; color: #166534; padding: 8px 10px; border-radius: 8px; font-family: serif; padding-left: 18px; text-indent: -10px;">
-            ✅ Smith, J. (2021). <i>Blue light and circadian rhythms</i>. Sleep Health, 15(2), 104–112.
-        </div>
-    </div>
-</div>
-""", unsafe_allow_html=True)
-
-# Visual Upgrade 2: University Social Proof Bar
-st.markdown("""
-<div style="text-align: center; margin-bottom: 20px;">
-    <div style="font-size: 11px; font-weight: 700; color: #94A3B8; letter-spacing: 0.06em; text-transform: uppercase; margin-bottom: 8px;">
-        Formatted according to official rubrics used at
-    </div>
-    <div style="display: flex; justify-content: center; gap: 16px; flex-wrap: wrap; opacity: 0.75; font-size: 12px; font-weight: 600; color: #475569;">
-        <span>🏛️ Oxford</span>
-        <span>•</span>
-        <span>🏛️ Harvard</span>
-        <span>•</span>
-        <span>🏛️ NYU</span>
-        <span>•</span>
-        <span>🏛️ Toronto</span>
-        <span>•</span>
-        <span>🏛️ Melbourne</span>
-    </div>
-</div>
-""", unsafe_allow_html=True)
-
-# Visual Upgrade 3: Three-Step Workflow Roadmap
-st.markdown("""
-<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; margin-bottom: 20px;">
-    <div style="background: #F8FAFC; border: 1px solid #E2E8F0; padding: 12px; border-radius: 10px; text-align: center;">
-        <div style="font-size: 18px; margin-bottom: 4px;">📋</div>
-        <div style="font-weight: 700; font-size: 12px; color: #1E293B;">1. Paste Draft</div>
-        <div style="font-size: 11px; color: #64748B;">Raw text or .docx</div>
-    </div>
-    <div style="background: #F8FAFC; border: 1px solid #E2E8F0; padding: 12px; border-radius: 10px; text-align: center;">
-        <div style="font-size: 18px; margin-bottom: 4px;">⚙️</div>
-        <div style="font-weight: 700; font-size: 12px; color: #1E293B;">2. Select Manual</div>
-        <div style="font-size: 11px; color: #64748B;">APA, MLA, Harvard</div>
-    </div>
-    <div style="background: #F8FAFC; border: 1px solid #E2E8F0; padding: 12px; border-radius: 10px; text-align: center;">
-        <div style="font-size: 18px; margin-bottom: 4px;">🚀</div>
-        <div style="font-weight: 700; font-size: 12px; color: #1E293B;">3. Export Clean</div>
-        <div style="font-size: 11px; color: #64748B;">Hanging indents set</div>
-    </div>
-</div>
-""", unsafe_allow_html=True)
-
 # Session Status Messages
 if is_pro:
     st.info("💡 **Pro Access Active (2-Hour Window):** Keep this browser tab open to run and export all your documents.")
 elif st.session_state.session_expired:
     st.warning("⚠️ **Pass Expired:** Your 2-hour Pro window has elapsed. Upgrade below to run new papers.")
 
-# 6. Pro Banner (Free Tier Only)
 if not is_pro:
     st.markdown(
         f"""
@@ -354,7 +304,7 @@ if not is_pro:
         unsafe_allow_html=True
     )
 
-# 7. Document Inputs & Settings
+# 6. Document Inputs & Settings
 tab_input, tab_settings = st.tabs(["📝 Document Editor", "⚙️ Options & Style Manuals"])
 
 with tab_settings:
@@ -364,7 +314,7 @@ with tab_settings:
             "Style Manual",
             ["APA 7th Edition", "MLA 9th Edition", "Harvard Style", "Chicago 17th Edition (Author-Date)", "IEEE"]
         )
-        audit_citations = st.toggle("Citation Integrity Check (Cross-reference in-text sources with references)", value=True)
+        audit_citations = st.toggle("Citation Integrity Check", value=True)
         editorial_tips = st.toggle("Academic Tone & Phrasing Review", value=True)
     else:
         st.selectbox("Style Manual", ["APA 7th Edition (Upgrade for MLA, Chicago, Harvard)"], disabled=True)
@@ -380,8 +330,10 @@ with tab_input:
             st.session_state.input_text = SAMPLE_TEXT
     with btn_col2:
         uploaded_doc = st.file_uploader("Upload .docx / .txt", type=["docx", "txt"], label_visibility="collapsed")
-        if uploaded_doc is not None:
+        # Fix #2: Only extract if it's a newly uploaded file
+        if uploaded_doc is not None and uploaded_doc.name != st.session_state.last_uploaded_file:
             st.session_state.input_text = extract_text_from_file(uploaded_doc)
+            st.session_state.last_uploaded_file = uploaded_doc.name
 
     user_text = st.text_area(
         "Document Text",
@@ -400,7 +352,7 @@ with tab_input:
 
     run_button = st.button("✨ Format & Audit Document", type="primary", use_container_width=True)
 
-# 8. Execution Pipeline
+# 7. Execution Pipeline
 if run_button:
     if not user_text.strip():
         st.warning("Please paste or upload text first.")
@@ -446,50 +398,52 @@ if run_button:
                     timeout=60.0
                 )
                 output_content = response.choices[0].message.content
+                
+                # Fix #1: Save to session state instead of displaying instantly
+                if DELIMITER in output_content:
+                    clean, notes = output_content.split(DELIMITER, 1)
+                    st.session_state.clean_text = clean.strip()
+                    st.session_state.editorial_notes = notes.strip()
+                else:
+                    st.session_state.clean_text = output_content.strip()
+                    st.session_state.editorial_notes = ""
+                    
                 if not is_pro:
                     st.session_state.free_uses += 1
                 status_box.update(label="Complete!", state="complete", expanded=False)
+                st.rerun()
+                
             except openai.APIConnectionError:
                 status_box.update(label="Network error", state="error")
                 st.error("Unable to reach the AI engine. Check your connection and try again.")
-                st.stop()
             except openai.RateLimitError:
                 status_box.update(label="System busy", state="error")
                 st.error("System traffic is high. Please wait 15 seconds and try again.")
-                st.stop()
             except Exception:
                 status_box.update(label="Error", state="error")
                 st.error("An error occurred during formatting. Please verify your text.")
-                st.stop()
 
-        # 9. Deliverables Display
-        st.markdown("### Formatted Deliverable")
-        
-        if DELIMITER in output_content:
-            clean_text, editorial_notes = output_content.split(DELIMITER, 1)
-            clean_text = clean_text.strip()
-            editorial_notes = editorial_notes.strip()
-        else:
-            clean_text = output_content.strip()
-            editorial_notes = ""
+# 8. Deliverables Display (Independent of Run Button)
+if st.session_state.clean_text:
+    st.markdown("### Formatted Deliverable")
+    st.text_area("Copy Output:", value=st.session_state.clean_text, height=260)
 
-        st.text_area("Copy Output:", value=clean_text, height=260)
+    if is_pro:
+        # Fix #3: docx_output now processes actual hanging indents
+        docx_output = create_docx(st.session_state.clean_text, format_style)
+        st.download_button(
+            label="📥 Download .docx File (Double-Spaced & 1-in Margins)",
+            data=docx_output,
+            file_name="formatted_paper.docx",
+            mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+            use_container_width=True
+        )
+    
+    if st.session_state.editorial_notes:
+        st.markdown("### Editorial & Citation Audit")
+        st.markdown(st.session_state.editorial_notes)
 
-        if is_pro:
-            docx_output = create_docx(clean_text, format_style)
-            st.download_button(
-                label="📥 Download .docx File (Double-Spaced & 1-in Margins)",
-                data=docx_output,
-                file_name="formatted_paper.docx",
-                mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-                use_container_width=True
-            )
-        
-        if editorial_notes:
-            st.markdown("### Editorial & Citation Audit")
-            st.markdown(editorial_notes)
-
-# 10. Privacy & Integrity Notice
+# 9. Privacy Notice
 st.markdown(
     """
     <div class="trust-card">
