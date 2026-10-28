@@ -181,8 +181,8 @@ if "session_id" in st.query_params and not st.session_state.is_pro:
         # Clean the URL so refreshing doesn't break the app
         st.query_params.clear()
         
-    except Exception:
-        st.error("Could not verify payment. Please contact support.")
+    except Exception as e:
+        st.error(f"Stripe Error: {e}")
         st.query_params.clear()
 
 is_pro = st.session_state.is_pro
