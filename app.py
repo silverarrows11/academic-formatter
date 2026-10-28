@@ -169,19 +169,21 @@ if "editorial_notes" not in st.session_state:
 if "session_expired" not in st.session_state:
     st.session_state.session_expired = False
 
-session_id = st.query_params.get("session_id")
-
-if session_id and not st.session_state.is_pro:
+# Catch the Stripe redirect and verify payment
+if "session_id" in st.query_params and not st.session_state.is_pro:
     try:
-        session = stripe.checkout.Session.retrieve(session_id)
-        if session.payment_status == "paid":
-            time_elapsed = time.time() - session.created
-            if time_elapsed < 7200:
-                st.session_state.is_pro = True
-            else:
-                st.session_state.session_expired = True
+        checkout_session = stripe.checkout.Session.retrieve(st.query_params["session_id"])
+        
+        if checkout_session.payment_status == "paid":
+            st.session_state.is_pro = True
+            st.toast("Payment successful! Pro unlocked.", icon="✅")
+        
+        # Clean the URL so refreshing doesn't break the app
+        st.query_params.clear()
+        
     except Exception:
-        st.session_state.is_pro = False
+        st.error("Could not verify payment. Please contact support.")
+        st.query_params.clear()
 
 is_pro = st.session_state.is_pro
 
@@ -437,13 +439,53 @@ if st.session_state.clean_text:
             st.markdown("### Editorial & Citation Audit")
             st.markdown(st.session_state.editorial_notes)
 
-# 8. Footer
-st.markdown("""
-<div style="margin-top: 64px; padding-top: 24px; border-top: 1px solid var(--border-color, #E2E8F0); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px; font-size: 13px; color: #64748B;">
-    <div>© 2026 FormatForge Suite. All rights reserved.</div>
-    <div style="display: flex; gap: 16px;">
-        <a href="#" style="color: #64748B; text-decoration: none;">Privacy</a>
-        <a href="#" style="color: #64748B; text-decoration: none;">Terms</a>
-    </div>
-</div>
-""", unsafe_allow_html=True)
+# 8. Modals for Legal Text
+@st.dialog("Privacy Policy", width="large")
+def privacy_modal():
+    st.markdown("""
+    **Effective Date: October 2026**
+    
+    **1. Data Processing & Storage:** 
+    FormatForge operates on a strict zero-retention architecture. All document text submitted to the application is processed in volatile memory and is permanently destroyed the moment your session ends or the browser is closed. We do not store, log, or use your academic documents for AI training models.
+    
+    **2. Payment Information:** 
+    All transactions are encrypted and processed securely via Stripe. FormatForge does not collect, process, or store your credit card information on our servers.
+    
+    **3. Analytics & Tracking:** 
+    We use essential session states strictly to maintain your Pro access. We do not use third-party tracking cookies or sell user data to advertisers.
+    
+    **4. International Users (GDPR/CCPA):** 
+    Because we do not persist or store personal document data, your right to erasure is automatically and instantaneously fulfilled upon using the service.
+    """)
+
+@st.dialog("Terms of Service", width="large")
+def terms_modal():
+    st.markdown("""
+    **Effective Date: October 2026**
+    
+    **1. Scope of Service:** 
+    FormatForge is a structural formatting and copyediting utility. It is not an essay writing service. The tool does not generate academic arguments, conduct research, or bypass plagiarism detectors.
+    
+    **2. Academic Liability:** 
+    While our engine is calibrated to strict university style manuals, the user assumes all responsibility for final submission. FormatForge is not liable for academic penalties, grading outcomes, missed deadlines, or undetected citation inaccuracies. Always review your generated documents.
+    
+    **3. Payments & Access:** 
+    Due to the immediate, single-use digital nature of this service, all sales are final unless otherwise mandated by your local consumer protection laws.
+    
+    **4. "As-Is" Provision:** 
+    The service is provided "as is" and "as available" without warranties of any kind, either express or implied, including but not limited to formatting perfection or uninterrupted server uptime.
+    """)
+
+# 9. Footer UI
+st.markdown("<div style='margin-top: 64px; border-top: 1px solid var(--border-color, #E2E8F0); padding-top: 24px;'></div>", unsafe_allow_html=True)
+
+foot_col1, foot_col2, foot_col3 = st.columns([6, 1, 1])
+
+with foot_col1:
+    st.markdown("<div style='font-size: 13px; color: #64748B; padding-top: 8px;'>© 2026 FormatForge Suite. All rights reserved.</div>", unsafe_allow_html=True)
+with foot_col2:
+    if st.button("Privacy", type="tertiary", use_container_width=True):
+        privacy_modal()
+with foot_col3:
+    if st.button("Terms", type="tertiary", use_container_width=True):
+        terms_modal()
