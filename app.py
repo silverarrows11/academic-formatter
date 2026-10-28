@@ -1,6 +1,7 @@
 import io
 import time
 import re
+import os
 import streamlit as st
 import openai
 import stripe
@@ -140,8 +141,9 @@ PRO_MAX_CHARS = 35000
 STRIPE_PAYMENT_URL = "https://buy.stripe.com/cNidRbdxg5l4c9902l5Ne01"
 DELIMITER = "---AUDIT_AND_FEEDBACK---"
 
-if "STRIPE_SECRET_KEY" in st.secrets:
-    stripe.api_key = st.secrets["STRIPE_SECRET_KEY"]
+stripe_key = os.getenv("STRIPE_SECRET_KEY")
+if stripe_key:
+    stripe.api_key = stripe_key
 
 SAMPLE_TEXT = """The Impact of Screen Time on Teen Sleep Patterns
 
@@ -283,7 +285,7 @@ def format_editor_modal():
         elif not is_pro and char_len > FREE_CHAR_LIMIT:
             st.error(f"Text exceeds the {FREE_CHAR_LIMIT}-character free limit.")
         else:
-            client = openai.OpenAI(api_key=st.secrets["OPENAI_API_KEY"])
+            client = openai.OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
             with st.spinner("Analyzing and formatting manuscript..."):
                 instructions = []
                 if is_pro and audit_citations:
