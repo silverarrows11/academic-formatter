@@ -328,9 +328,8 @@ def format_editor_modal():
                     time.sleep(1)
                     st.rerun() # Closes modal and updates main page
                     
-                except Exception:
-                    st.error("An error occurred during formatting. Please verify your text.")
-
+                        except Exception as e:
+                    st.error(f"OpenAI Error: {e}")
 
 # 6. Main Landing Page UI
 status_badge = '<span class="badge badge-pro">Pro Access Active</span>' if is_pro else '<span class="badge badge-free">Free Trial</span>'
