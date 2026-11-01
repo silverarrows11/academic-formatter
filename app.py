@@ -324,7 +324,7 @@ def format_editor_modal():
                     if not is_pro:
                         st.session_state.free_uses += 1
                     
-                    st.toast("✅ Manuscript successfully formatted!", icon="✦")
+                    st.toast("Manuscript successfully formatted!", icon="📝")
                     time.sleep(1)
                     st.rerun() # Closes modal and updates main page
                     
