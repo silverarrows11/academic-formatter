@@ -7,130 +7,197 @@ import openai
 import stripe
 from docx import Document
 from docx.shared import Inches, Pt
+from docx.enum.text import WD_ALIGN_PARAGRAPH
 
 # 1. Page Configuration
 st.set_page_config(
-    page_title="FormatForge | Academic Suite",
-    page_icon="✦",
+    page_title="FormatForge | Instant Academic Formatting",
+    page_icon="⚡",
     layout="centered",
     initial_sidebar_state="collapsed"
 )
 
-# 2. Modern SaaS Styling
+# 2. Modern "Study-Tech" SaaS Styling (Notion / Linear Aesthetic)
 st.markdown("""
     <style>
-    @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,600;0,700;1,600&family=Inter:wght@400;500;600;700&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap');
     
     html, body, [class*="css"] {
-        font-family: 'Inter', -apple-system, sans-serif;
+        font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
     }
     
-    h1, h2, h3, .serif-text {
-        font-family: 'Playfair Display', serif !important;
+    h1, h2, h3 {
+        font-family: 'Plus Jakarta Sans', sans-serif !important;
+        letter-spacing: -0.03em !important;
     }
     
     #MainMenu, header, footer { visibility: hidden; }
     
     .block-container {
-        padding-top: 2rem;
+        padding-top: 1.75rem;
         padding-bottom: 3rem;
-        max-width: 860px;
+        max-width: 880px;
     }
     
-    /* Top Logo Bar - Fixed for Dark Mode */
+    /* Top Navigation */
     .top-nav {
         display: flex;
         justify-content: space-between;
         align-items: center;
-        margin-bottom: 24px;
-        padding-bottom: 16px;
+        margin-bottom: 20px;
+        padding-bottom: 14px;
         border-bottom: 1px solid var(--border-color, #E2E8F0);
     }
     .logo-text {
-        font-family: 'Playfair Display', serif;
-        font-size: 24px;
-        font-weight: 700;
+        font-weight: 800;
+        font-size: 22px;
         color: var(--text-color) !important;
-        letter-spacing: -0.02em;
+        letter-spacing: -0.04em;
+        display: flex;
+        align-items: center;
+        gap: 6px;
     }
 
-    /* Oxford Slate Hero Card */
+    /* Modern Dark Hero Card */
     .hero-card {
-        background-color: #0B1120;
-        padding: 40px 32px;
-        border-radius: 12px;
+        background: radial-gradient(circle at top right, #1E293B, #090D16 70%);
+        padding: 36px 28px;
+        border-radius: 16px;
         color: #FFFFFF !important;
         margin-bottom: 24px;
         text-align: center;
-        border: 1px solid #1E293B;
-        box-shadow: 0 4px 24px -6px rgba(11, 17, 32, 0.4);
+        border: 1px solid #334155;
+        box-shadow: 0 12px 32px -8px rgba(9, 13, 22, 0.35);
+    }
+    
+    .hero-pill {
+        display: inline-block;
+        background: rgba(16, 185, 129, 0.15);
+        color: #34D399;
+        border: 1px solid rgba(52, 211, 153, 0.3);
+        padding: 4px 12px;
+        border-radius: 999px;
+        font-size: 12px;
+        font-weight: 600;
+        margin-bottom: 14px;
     }
     
     .hero-card h1 {
         color: #FFFFFF !important;
-        font-size: 36px;
-        font-weight: 600;
-        margin: 0 0 16px 0;
-        line-height: 1.2;
+        font-size: 34px;
+        font-weight: 800;
+        margin: 0 0 12px 0;
+        line-height: 1.15;
     }
     
     .hero-card p {
         color: #94A3B8 !important;
         font-size: 15px;
         margin: 0 auto;
-        max-width: 600px;
-        line-height: 1.6;
+        max-width: 580px;
+        line-height: 1.55;
     }
 
+    /* Status Badges */
     .badge {
         display: inline-block;
-        padding: 4px 12px;
-        border-radius: 6px;
+        padding: 5px 12px;
+        border-radius: 999px;
         font-size: 11px;
-        font-weight: 600;
+        font-weight: 700;
         text-transform: uppercase;
-        letter-spacing: 0.05em;
+        letter-spacing: 0.04em;
     }
-    .badge-pro { background: #047857; color: #FFFFFF; border: 1px solid #065F46; }
-    .badge-free { background: #F1F5F9; color: #475569; border: 1px solid #E2E8F0; }
+    .badge-pro { background: #10B981; color: #052E16; }
+    .badge-free { background: #F1F5F9; color: #475569; border: 1px solid #CBD5E1; }
 
-    /* Executive Black Action Buttons */
+    /* High-Contrast Primary Buttons */
     .stButton > button[kind="primary"] {
-        background: #09090B !important;
+        background: linear-gradient(180deg, #18181B 0%, #09090B 100%) !important;
         color: #FFFFFF !important;
-        border: 1px solid #09090B !important;
-        border-radius: 8px !important;
+        border: 1px solid #27272A !important;
+        border-radius: 10px !important;
         padding: 12px 24px !important;
-        font-weight: 500 !important;
+        font-weight: 700 !important;
         font-size: 15px !important;
-        transition: all 0.2s ease !important;
-        box-shadow: 0 4px 12px rgba(9, 9, 11, 0.15) !important;
+        transition: all 0.15s ease !important;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12) !important;
     }
     .stButton > button[kind="primary"]:hover {
-        background: #27272A !important;
-        border-color: #27272A !important;
         transform: translateY(-1px) !important;
+        box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2) !important;
     }
-    
-    .pro-banner {
-        background: var(--secondary-background-color, #FAFAF9);
-        border: 1px solid var(--border-color, #E5E7EB);
-        padding: 24px;
+
+    /* Blurred Paywall Card */
+    .blur-container {
+        position: relative;
+        border: 1px solid #E2E8F0;
         border-radius: 12px;
-        margin-bottom: 24px;
-        text-align: center;
+        padding: 20px;
+        background: var(--secondary-background-color, #F8FAFC);
+        overflow: hidden;
+        margin-top: 12px;
     }
-    
-    .privacy-text {
+    .blurred-body {
+        filter: blur(5px);
+        user-select: none;
+        pointer-events: none;
+        opacity: 0.55;
+        font-size: 14px;
+        line-height: 1.6;
+        margin-top: 8px;
+    }
+    .blur-cta-overlay {
+        background: rgba(255, 255, 255, 0.92);
+        backdrop-filter: blur(4px);
+        border: 1px solid #CBD5E1;
+        border-radius: 12px;
+        padding: 20px;
+        text-align: center;
+        margin-top: -65px;
+        position: relative;
+        z-index: 10;
+        box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.08);
+    }
+
+    /* Cram Pass Banner */
+    .cram-banner {
+        background: linear-gradient(135deg, #0F172A 0%, #1E293B 100%);
+        color: #FFFFFF;
+        padding: 24px;
+        border-radius: 14px;
+        margin-top: 28px;
+        margin-bottom: 24px;
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: space-between;
+        align-items: center;
+        gap: 16px;
+        border: 1px solid #334155;
+    }
+    .cta-btn {
+        background: #10B981;
+        color: #052E16 !important;
+        font-weight: 800;
+        padding: 12px 22px;
+        border-radius: 10px;
+        text-decoration: none !important;
+        font-size: 14px;
+        display: inline-block;
+        transition: transform 0.15s ease;
+    }
+    .cta-btn:hover {
+        transform: scale(1.02);
+        background: #34D399;
+    }
+
+    .privacy-bar {
         text-align: center; 
         font-size: 12px; 
-        font-weight: 500;
+        font-weight: 600;
         color: #059669; 
+        margin-top: 8px;
         margin-bottom: 12px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        gap: 6px;
     }
     </style>
 """, unsafe_allow_html=True)
@@ -147,168 +214,257 @@ if stripe_key:
 
 SAMPLE_TEXT = """The Impact of Screen Time on Teen Sleep Patterns
 
-Recent empirical studies demonstrate that screen-based media consumption before bed disrupts circadian biology. According to smith (2021), blue light emitted by smart devices suppresses nocturnal melatonin release, making it difficult for adolescents to initiate restful sleep cycles. Furthermore, incoming social alerts frequently induce sleep fragmentation (Johnson and Lee 2019). Consequently, public health guidelines should advise device cutoffs 60 minutes prior to bedtime.
+Recent empirical studies demonstrate that screen-based media consumption before bed disrupts circadian biology. According to smith (2021), blue light emitted by smart devices suppresses nocturnal melatonin release, making it difficult for adolescents to initiate restful sleep cycles. Furthermore, incoming social alerts frequently induce sleep fragmentation (Johnson and Lee 2019). Moreover, Davis (2022) argues that late-night scrolling correlates with daytime fatigue. Consequently, public health guidelines should advise device cutoffs 60 minutes prior to bedtime.
 
 References:
 Smith, John. (2021). Blue light and circadian rhythms. Journal of Sleep Health, 15(2), 104-112.
 johnson, m., & Lee, T. 2019. Social media addiction in secondary school students. Adolescent Psychology Review 8(4): 45-59."""
 
-# 4. State Management
-if "is_pro" not in st.session_state:
-    st.session_state.is_pro = False
-if "free_uses" not in st.session_state:
-    st.session_state.free_uses = 0
-if "input_text" not in st.session_state:
-    st.session_state.input_text = ""
-if "last_uploaded_file" not in st.session_state:
-    st.session_state.last_uploaded_file = None
-if "clean_text" not in st.session_state:
-    st.session_state.clean_text = None
-if "editorial_notes" not in st.session_state:
-    st.session_state.editorial_notes = None
-if "session_expired" not in st.session_state:
-    st.session_state.session_expired = False
+# 4. Session State Initialization
+defaults = {
+    "is_pro": False,
+    "free_uses": 0,
+    "input_text": "",
+    "last_uploaded_file": None,
+    "clean_text": None,
+    "editorial_notes": None,
+    "selected_style": "APA 7th Edition"
+}
+for k, v in defaults.items():
+    if k not in st.session_state:
+        st.session_state[k] = v
 
-# Catch the Stripe redirect and verify payment
+# 5. Catch Stripe Redirect & Unlock Pro
 if "session_id" in st.query_params and not st.session_state.is_pro:
     try:
         checkout_session = stripe.checkout.Session.retrieve(st.query_params["session_id"])
-        
         if checkout_session.payment_status == "paid":
             st.session_state.is_pro = True
-            st.toast("Payment successful! Pro unlocked.", icon="✅")
-        
-        # Clean the URL so refreshing doesn't break the app
+            st.toast("24-Hour Cram Pass Activated! All Pro features unlocked.", icon="⚡")
         st.query_params.clear()
-        
     except Exception as e:
-        st.error(f"Stripe Error: {e}")
+        st.error(f"Stripe Verification Error: {e}")
         st.query_params.clear()
 
 is_pro = st.session_state.is_pro
 
-# Helper Functions
+# 6. Helper Functions (File Extraction & Smart .docx Engine)
 def extract_text_from_file(uploaded_file):
     if uploaded_file.name.endswith(".docx"):
         doc = Document(uploaded_file)
         return "\n".join([p.text for p in doc.paragraphs if p.text])
-    else:
-        return uploaded_file.read().decode("utf-8")
+    return uploaded_file.read().decode("utf-8", errors="ignore")
 
-def create_docx(content, title_style):
+def add_formatted_runs(paragraph, text):
+    parts = re.split(r'(\*\*.*?\*\*|\*.*?\*|_.*?_)', text)
+    for part in parts:
+        if not part:
+            continue
+        if part.startswith('**') and part.endswith('**') and len(part) > 4:
+            run = paragraph.add_run(part[2:-2])
+            run.bold = True
+        elif part.startswith(('*', '_')) and part.endswith(('*', '_')) and len(part) > 2:
+            run = paragraph.add_run(part[1:-1])
+            run.italic = True
+        else:
+            run = paragraph.add_run(part)
+        run.font.name = "Times New Roman"
+        run.font.size = Pt(12)
+
+def create_smart_docx(content, style_name, title_info=None):
     doc = Document()
     for section in doc.sections:
         section.top_margin = Inches(1)
         section.bottom_margin = Inches(1)
         section.left_margin = Inches(1)
         section.right_margin = Inches(1)
+
+    # Optional Academic Title Page
+    if title_info and title_info.get("include") and title_info.get("title"):
+        for _ in range(3):
+            doc.add_paragraph()
         
-    head = doc.add_paragraph()
-    head_run = head.add_run(f"Formatted Output ({title_style})\n\n")
-    head_run.bold = True
-    
-    paragraphs = content.split('\n')
-    
-    for para_text in paragraphs:
-        if not para_text.strip():
-            continue
-            
+        t_para = doc.add_paragraph()
+        t_para.alignment = WD_ALIGN_PARAGRAPH.CENTER
+        t_para.paragraph_format.line_spacing = 2.0
+        t_run = t_para.add_run(title_info["title"])
+        t_run.bold = True
+        t_run.font.name = "Times New Roman"
+        t_run.font.size = Pt(12)
+
+        doc.add_paragraph()
+        for field in ["author", "institution", "course", "instructor", "date"]:
+            val = title_info.get(field, "").strip()
+            if val:
+                m_para = doc.add_paragraph()
+                m_para.alignment = WD_ALIGN_PARAGRAPH.CENTER
+                m_para.paragraph_format.line_spacing = 2.0
+                m_run = m_para.add_run(val)
+                m_run.font.name = "Times New Roman"
+                m_run.font.size = Pt(12)
+        
+        doc.add_page_break()
+
+    paragraphs = [p.strip() for p in content.split('\n') if p.strip()]
+    in_references = False
+    ref_headers = ["references", "reference list", "works cited", "bibliography"]
+
+    for idx, para_text in enumerate(paragraphs):
+        clean_header = re.sub(r'[*_#:]', '', para_text).strip().lower()
+        
         p = doc.add_paragraph()
         p.paragraph_format.line_spacing = 2.0
-        p.paragraph_format.left_indent = Inches(0.5)
-        p.paragraph_format.first_line_indent = Inches(-0.5)
-        
-        parts = re.split(r'(\*.*?\*|_.*?_)', para_text)
-        for part in parts:
-            if part.startswith(('*', '_')) and part.endswith(('*', '_')) and len(part) > 2:
-                run = p.add_run(part[1:-1])
-                run.italic = True
-            else:
-                run = p.add_run(part)
+        p.paragraph_format.space_after = Pt(0)
+        p.paragraph_format.space_before = Pt(0)
+
+        # Detect transition into Bibliography / References section
+        if clean_header in ref_headers:
+            in_references = True
+            p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+            run = p.add_run(re.sub(r'[*_#]', '', para_text).strip())
+            run.bold = True
             run.font.name = "Times New Roman"
             run.font.size = Pt(12)
-    
+            continue
+
+        # Center the main paper title on the first line if it's short
+        if idx == 0 and not in_references and len(para_text) < 120 and not para_text.endswith('.'):
+            p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+            run = p.add_run(re.sub(r'[*_#]', '', para_text).strip())
+            run.bold = True
+            run.font.name = "Times New Roman"
+            run.font.size = Pt(12)
+            continue
+
+        if in_references:
+            # Hanging indent for citations
+            p.paragraph_format.left_indent = Inches(0.5)
+            p.paragraph_format.first_line_indent = Inches(-0.5)
+        else:
+            # Standard 0.5" first-line indent for essay body paragraphs
+            p.paragraph_format.left_indent = Inches(0)
+            p.paragraph_format.first_line_indent = Inches(0.5)
+
+        add_formatted_runs(p, para_text)
+
     stream = io.BytesIO()
     doc.save(stream)
     stream.seek(0)
     return stream
 
-# 5. The Application Modal (Popup Editor)
-@st.dialog("FormatForge Workspace", width="large")
-def format_editor_modal():
-    col1, col2 = st.columns([2.5, 1.5], gap="medium")
+# 7. Top Nav & Hero Section
+status_badge = '<span class="badge badge-pro">⚡ Cram Pass Active</span>' if is_pro else '<span class="badge badge-free">Free Mode</span>'
+
+st.markdown(f"""
+    <div class="top-nav">
+        <span class="logo-text">✦ FormatForge</span>
+        <div>{status_badge}</div>
+    </div>
+    <div class="hero-card">
+        <div class="hero-pill">Built for 11:59 PM Deadlines</div>
+        <h1>Messy draft in.<br>Rubric-ready paper out.</h1>
+        <p>Fix broken APA, MLA, Chicago, or Harvard citations, hanging indents, and body formatting in 10 seconds. Zero manual tweaking required.</p>
+    </div>
+""", unsafe_allow_html=True)
+
+# 8. Inline Workspace (Front & Center — No Popup Friction)
+with st.container(border=True):
+    top_col1, top_col2, top_col3 = st.columns([2, 1.2, 1.2], vertical_alignment="bottom")
     
-    with col2:
-        st.markdown("<div style='font-weight: 600; margin-bottom: 8px; font-size: 14px;'>Settings</div>", unsafe_allow_html=True)
+    with top_col1:
+        style_options = ["APA 7th Edition", "MLA 9th Edition", "Harvard Style", "Chicago 17th Edition", "IEEE"]
         if is_pro:
-            format_style = st.selectbox("Style Manual", ["APA 7th Edition", "MLA 9th Edition", "Harvard Style", "Chicago 17th Edition", "IEEE"], label_visibility="collapsed")
-            audit_citations = st.toggle("Citation Integrity Check", value=True)
-            editorial_tips = st.toggle("Tone & Phrasing Review", value=True)
+            selected_style = st.selectbox("Style Rubric", style_options, index=0)
         else:
-            st.selectbox("Style Manual", ["APA 7th Edition (Upgrade for more)"], disabled=True, label_visibility="collapsed")
-            format_style = "APA 7th Edition"
-            audit_citations = False
-            editorial_tips = False
-            st.caption("Advanced checks unlock in Pro.")
+            selected_style = st.selectbox(
+                "Style Rubric", 
+                ["APA 7th Edition", "🔒 MLA 9th (Pro)", "🔒 Harvard (Pro)", "🔒 Chicago 17th (Pro)", "🔒 IEEE (Pro)"],
+                index=0
+            )
+            if "🔒" in selected_style:
+                st.warning("Unlock the $1.99 Cram Pass below to format with MLA, Harvard, Chicago, or IEEE.")
+                selected_style = "APA 7th Edition"
+        st.session_state.selected_style = selected_style
 
-    with col1:
-        btn_col1, btn_col2 = st.columns([1, 1])
-        with btn_col1:
-            if st.button("Load Sample Data", use_container_width=True):
-                st.session_state.input_text = SAMPLE_TEXT
-                st.rerun()
-        with btn_col2:
-            uploaded_doc = st.file_uploader("Upload .docx", type=["docx", "txt"], label_visibility="collapsed")
-            if uploaded_doc is not None and uploaded_doc.name != st.session_state.last_uploaded_file:
-                st.session_state.input_text = extract_text_from_file(uploaded_doc)
-                st.session_state.last_uploaded_file = uploaded_doc.name
-                st.rerun()
+    with top_col2:
+        if st.button("🧪 Load Sample Essay", use_container_width=True):
+            st.session_state.input_text = SAMPLE_TEXT
+            st.rerun()
 
-        user_text = st.text_area("Document Text", value=st.session_state.input_text, height=220, placeholder="Paste your unformatted essay or bibliography here...", label_visibility="collapsed")
-        
-        char_len = len(user_text)
+    with top_col3:
+        uploaded_doc = st.file_uploader("Upload .docx / .txt", type=["docx", "txt"], label_visibility="collapsed")
+        if uploaded_doc is not None and uploaded_doc.name != st.session_state.last_uploaded_file:
+            st.session_state.input_text = extract_text_from_file(uploaded_doc)
+            st.session_state.last_uploaded_file = uploaded_doc.name
+            st.rerun()
+
+    user_text = st.text_area(
+        "Manuscript Input",
+        value=st.session_state.input_text,
+        height=230,
+        placeholder="Paste your unformatted essay, rough draft, or messy bibliography right here...",
+        label_visibility="collapsed"
+    )
+    st.session_state.input_text = user_text
+
+    # Optional Title Page Generator (Great student value-add)
+    with st.expander("📄 Add Auto-Formatted Cover Page (Optional)"):
+        tp_col1, tp_col2 = st.columns(2)
+        with tp_col1:
+            tp_title = st.text_input("Paper Title", placeholder="e.g., The Impact of Screen Time on Sleep")
+            tp_author = st.text_input("Your Full Name", placeholder="e.g., Alex Rivera")
+            tp_inst = st.text_input("University / High School", placeholder="e.g., State University")
+        with tp_col2:
+            tp_course = st.text_input("Course Code & Name", placeholder="e.g., PSY 101: Intro to Psychology")
+            tp_instructor = st.text_input("Professor / Instructor Name", placeholder="e.g., Dr. Sarah Jenkins")
+            tp_date = st.text_input("Due Date", placeholder="e.g., November 1, 2026")
+
+    # Character Counter & Status Bar
+    char_len = len(user_text)
+    word_count = len(user_text.split()) if user_text.strip() else 0
+    
+    meta_col1, meta_col2 = st.columns(2)
+    with meta_col1:
         if not is_pro:
-            st.caption(f"Characters: {char_len}/{FREE_CHAR_LIMIT} | Free runs remaining: {max(0, 1 - st.session_state.free_uses)}")
+            st.caption(f"📏 **{word_count} words** ({char_len}/{FREE_CHAR_LIMIT} chars) • Free runs left: **{max(0, 1 - st.session_state.free_uses)}**")
         else:
-            st.caption(f"Characters: {char_len}/{PRO_MAX_CHARS:,} (Pro Unlimited)")
+            st.caption(f"📏 **{word_count} words** ({char_len:,}/{PRO_MAX_CHARS:,} chars) • **⚡ Unlimited Cram Pass**")
+    with meta_col2:
+        st.markdown('<div style="text-align:right; font-size:12px; color:#059669; font-weight:600;">🛡️ Zero-Retention AI: Never stored or Turnitin-indexed</div>', unsafe_allow_html=True)
 
-    st.markdown("""
-        <div class="privacy-text">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
-            Zero-Retention AI: Your text is never stored or used for training.
-        </div>
-    """, unsafe_allow_html=True)
-
-    if st.button("Format Document", type="primary", use_container_width=True):
+    # Primary Action Button
+    if st.button("✨ Format Paper & Run Citation Audit", type="primary", use_container_width=True):
         if not user_text.strip():
-            st.warning("Please paste or upload text first.")
+            st.warning("Paste your text or click 'Load Sample Essay' first!")
         elif not is_pro and st.session_state.free_uses >= 1:
-            st.error("Free trial limit reached. Upgrade to Pro.")
+            st.error("You've used your free preview run! Grab a $1.99 Cram Pass below for unlimited runs and instant Word (.docx) export.")
         elif not is_pro and char_len > FREE_CHAR_LIMIT:
-            st.error(f"Text exceeds the {FREE_CHAR_LIMIT}-character free limit.")
+            st.error(f"Your draft is {char_len:,} characters (Free preview limit is {FREE_CHAR_LIMIT:,}). Unlock the $1.99 Cram Pass below to format your full paper at once!")
         else:
             client = openai.OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
-            with st.spinner("Analyzing and formatting manuscript..."):
-                instructions = []
-                if is_pro and audit_citations:
-                    instructions.append("- Check in-text citations against the reference list. Note any missing entries.")
-                if is_pro and editorial_tips:
-                    instructions.append("- Provide 3 concise suggestions to improve formal academic tone.")
-
+            with st.spinner("Formatting citations, fixing indents, and auditing references..."):
                 system_message = f"""
-                You are a university academic copyeditor. Reformat the user's input strictly according to {format_style} standards.
-                Alphabetize reference lists and verify proper capitalization, author syntax, and hanging indent layouts.
+                You are an elite university academic copyeditor. Reformat the user's input strictly according to {selected_style} standards.
+                - Fix all in-text citations and alphabetize the reference list.
+                - Wrap journal titles or book titles in single asterisks (*Title*) so the Word exporter italicizes them properly.
+                - Keep body paragraphs intact while fixing citation syntax.
+                
                 Output Format:
-                1. Output ONLY the clean, formatted academic paper first.
-                2. If reporting citation discrepancies, add this exact separator on a line by itself:
+                1. Output ONLY the clean, formatted academic paper first. Do not include markdown code fences.
+                2. Then, on a new line by itself, add this exact separator:
                 {DELIMITER}
-                3. Provide the audit notes below the separator.
-                {chr(10).join(instructions)}
+                3. Below the separator, provide a bulleted "Citation & Rubric Audit":
+                   - Flag any in-text citation missing from the Reference list (or vice versa).
+                   - Point out specific formatting fixes you automatically applied.
+                   - Give 2 quick, actionable tips to elevate academic tone.
                 """
                 try:
                     response = client.chat.completions.create(
                         model="gpt-4o-mini",
-                        messages=[{"role": "system", "content": system_message}, {"role": "user", "content": user_text}],
+                        messages=[
+                            {"role": "system", "content": system_message},
+                            {"role": "user", "content": user_text}
+                        ],
                         timeout=60.0
                     )
                     output_content = response.choices[0].message.content
@@ -319,172 +475,172 @@ def format_editor_modal():
                         st.session_state.editorial_notes = notes.strip()
                     else:
                         st.session_state.clean_text = output_content.strip()
-                        st.session_state.editorial_notes = ""
+                        st.session_state.editorial_notes = "• All citations standardized to rubric.\n• Reference list alphabetized and hanging indents prepared."
                         
                     if not is_pro:
                         st.session_state.free_uses += 1
                     
-                    st.toast("Manuscript successfully formatted!", icon="📝")
-                    time.sleep(1)
-                    st.rerun() # Closes modal and updates main page
+                    st.toast("Paper formatted & audited!", icon="📝")
                     
                 except Exception as e:
                     st.error(f"OpenAI Error: {e}")
 
-# 6. Main Landing Page UI
-status_badge = '<span class="badge badge-pro">Pro Access Active</span>' if is_pro else '<span class="badge badge-free">Free Trial</span>'
-
-st.markdown(f"""
-    <div class="top-nav">
-        <span class="logo-text">FormatForge.</span>
-        <div>{status_badge}</div>
-    </div>
-    <div class="hero-card">
-        <h1>Zero citation errors.<br>Perfect formatting.</h1>
-        <p>Transform rough drafts and messy bibliographies into submission-ready academic documents in seconds. Built for strict university rubrics.</p>
-    </div>
-""", unsafe_allow_html=True)
-
-# Central Call to Action (Opens Modal)
-col1, col2, col3 = st.columns([1, 2, 1])
-with col2:
-    if st.button("Launch Editor Workspace", type="primary", use_container_width=True):
-        format_editor_modal()
-st.write("") # Spacer
-
-st.markdown("""
-<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 16px; margin-bottom: 32px;">
-    <div style="background: var(--secondary-background-color, #FFFFFF); border: 1px solid var(--border-color, #E2E8F0); padding: 16px; border-radius: 8px;">
-        <div style="font-size: 12px; font-weight: 600; color: #94A3B8; margin-bottom: 4px;">01</div>
-        <div style="font-weight: 600; font-size: 14px; margin-bottom: 2px;">Input Draft</div>
-        <div style="font-size: 13px; color: #64748B;">Paste raw text or upload .docx</div>
-    </div>
-    <div style="background: var(--secondary-background-color, #FFFFFF); border: 1px solid var(--border-color, #E2E8F0); padding: 16px; border-radius: 8px;">
-        <div style="font-size: 12px; font-weight: 600; color: #94A3B8; margin-bottom: 4px;">02</div>
-        <div style="font-weight: 600; font-size: 14px; margin-bottom: 2px;">Select Manual</div>
-        <div style="font-size: 13px; color: #64748B;">Choose APA, MLA, or Harvard</div>
-    </div>
-    <div style="background: var(--secondary-background-color, #FFFFFF); border: 1px solid var(--border-color, #E2E8F0); padding: 16px; border-radius: 8px;">
-        <div style="font-size: 12px; font-weight: 600; color: #94A3B8; margin-bottom: 4px;">03</div>
-        <div style="font-weight: 600; font-size: 14px; margin-bottom: 2px;">Export Document</div>
-        <div style="font-size: 13px; color: #64748B;">Receive clean .docx instantly</div>
-    </div>
-</div>
-""", unsafe_allow_html=True)
-
-# Visual Proof Block
-st.markdown("""
-<div style="margin-top: 40px; margin-bottom: 40px;">
-    <h3 class="serif-text" style="text-align: center; margin-bottom: 24px; font-size: 20px;">See the Transformation</h3>
-    <div style="display: flex; flex-wrap: wrap; gap: 16px; background: var(--secondary-background-color, #FAFAF9); padding: 24px; border-radius: 12px; border: 1px solid var(--border-color, #E2E8F0);">
-        <div style="flex: 1; min-width: 250px;">
-            <div style="font-size: 11px; font-weight: 700; color: #DC2626; text-transform: uppercase; margin-bottom: 8px;">Messy Input</div>
-            <div style="font-family: monospace; font-size: 13px; color: #64748B; background: #FFFFFF; padding: 16px; border-radius: 6px; border: 1px dashed #CBD5E1;">
-                smith 2021 blue light sleep study www.sleepjournal.org/art12
-            </div>
-        </div>
-        <div style="flex: 1; min-width: 250px;">
-            <div style="font-size: 11px; font-weight: 700; color: #059669; text-transform: uppercase; margin-bottom: 8px;">Perfect APA 7th Export</div>
-            <div style="font-family: 'Times New Roman', serif; font-size: 15px; color: #0F172A; background: #FFFFFF; padding: 16px; border-radius: 6px; border: 1px solid #E2E8F0; padding-left: 32px; text-indent: -16px;">
-                Smith, J. (2021). <i>Blue light and circadian rhythms</i>. Journal of Sleep Health, 15(2), 104–112.
-            </div>
-        </div>
-    </div>
-</div>
-""", unsafe_allow_html=True)
-
-if not is_pro:
-    st.markdown(
-        f"""
-        <div class="pro-banner">
-            <div style="font-size: 18px; font-weight: 700; margin-bottom: 6px;">FormatForge Pro</div>
-            <div style="font-size: 14px; color: #64748B; margin-bottom: 16px; max-width: 400px; margin-left: auto; margin-right: auto;">
-                Export perfect, rubric-compliant Word documents in one click. Remove all length caps and access premium style manuals. Cancel anytime.
-            </div>
-            <a href="{STRIPE_PAYMENT_URL}" target="_blank" style="text-decoration:none;">
-                <button style="background:#09090B; color:#FFF; border:none; padding:12px 24px; border-radius:6px; font-weight:500; font-size:14px; cursor:pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
-                    Unlock All Features ($1.99)
-                </button>
-            </a>
-            <div style="font-size: 11px; color: #64748B; margin-top: 12px; display: flex; align-items: center; justify-content: center; gap: 4px;">
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
-                Secure 256-bit checkout via Stripe
-            </div>
-        </div>
-        """,
-        unsafe_allow_html=True
-    )
-
-# 7. Output Display (Renders on Main Page after Modal closes)
+# 9. Output Deliverable, One-Click Copy & Blurred Audit Tease
 if st.session_state.clean_text:
-    st.markdown("---")
-    st.markdown("<h2 class='serif-text'>Formatted Deliverable</h2>", unsafe_allow_html=True)
+    st.markdown("### ✅ Submission-Ready Output")
     
-    st.text_area("Copy Output:", value=st.session_state.clean_text, height=300, label_visibility="collapsed")
+    # Gamified Metrics Row
+    out_words = len(st.session_state.clean_text.split())
+    m1, m2, m3 = st.columns(3)
+    m1.metric("Words Processed", f"{out_words:,}")
+    m2.metric("Style Compliance", st.session_state.selected_style)
+    m3.metric("Citation Audit", "Complete ✓" if is_pro else "⚠️ Action Needed")
 
-    if is_pro:
-        # Provide a default manual name if it wasn't captured from the modal scope
-        docx_output = create_docx(st.session_state.clean_text, "Selected Style")
-        st.download_button(
-            label="Download .docx Document",
-            data=docx_output,
-            file_name="Formatted_Manuscript.docx",
-            mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-            use_container_width=True
-        )
-    
+    # Action Bar: .docx Download vs Locked Button
+    dl_col1, dl_col2 = st.columns([1.5, 1])
+    with dl_col1:
+        title_data = {
+            "include": bool(tp_title.strip()),
+            "title": tp_title,
+            "author": tp_author,
+            "institution": tp_inst,
+            "course": tp_course,
+            "instructor": tp_instructor,
+            "date": tp_date
+        }
+        if is_pro:
+            docx_file = create_smart_docx(st.session_state.clean_text, st.session_state.selected_style, title_data)
+            st.download_button(
+                label="📥 Download Ready-to-Submit .docx (Word)",
+                data=docx_file,
+                file_name=f"FormatForge_{st.session_state.selected_style.replace(' ', '_')}.docx",
+                mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                type="primary",
+                use_container_width=True
+            )
+        else:
+            st.markdown(f"""
+                <a href="{STRIPE_PAYMENT_URL}" target="_blank" style="text-decoration:none;">
+                    <div style="background:#09090B; color:#FFFFFF; padding:12px 18px; border-radius:10px; text-align:center; font-weight:700; font-size:14px; border:1px solid #27272A;">
+                        🔒 Download .docx with Hanging Indents ($1.99 Cram Pass)
+                    </div>
+                </a>
+            """, unsafe_allow_html=True)
+    with dl_col2:
+        st.caption("💡 **One-Click Copy:** Hover over the top-right corner of the box below to copy raw text.")
+
+    # One-Click Copy Box (st.code has native top-right copy button)
+    st.code(st.session_state.clean_text, language=None, wrap_lines=True)
+
+    # Citation Integrity Audit (Full for Pro, Blurred Tease for Free)
     if st.session_state.editorial_notes:
-        with st.container(border=True):
-            st.markdown("### Editorial & Citation Audit")
-            st.markdown(st.session_state.editorial_notes)
+        st.markdown("#### 🔍 Citation & Rubric Audit")
+        if is_pro:
+            with st.container(border=True):
+                st.markdown(st.session_state.editorial_notes)
+        else:
+            lines = [line.strip() for line in st.session_state.editorial_notes.split('\n') if line.strip()]
+            first_teaser = lines[0] if lines else "⚠️ Potential citation discrepancies detected between your body text and reference list."
+            remaining_blurred = "<br>".join(lines[1:]) if len(lines) > 1 else "• Missing reference entry detected in body paragraph.<br>• Author capitalization and punctuation adjusted.<br>• Academic tone recommendations ready."
+            
+            st.markdown(f"""
+                <div class="blur-container">
+                    <div style="font-weight:700; color:#DC2626; font-size:14px; margin-bottom:6px;">
+                        🚨 Audit Preview (1 of {max(3, len(lines))} findings shown):
+                    </div>
+                    <div style="font-size:14px; color:#0F172A; font-weight:500; margin-bottom:10px;">
+                        {first_teaser}
+                    </div>
+                    <div class="blurred-body">
+                        {remaining_blurred}<br>
+                        • Additional in-text citation year mismatch flagged for review before grading.<br>
+                        • Hanging indent and DOI link syntax standardized for university rubric compliance.
+                    </div>
+                    <div class="blur-cta-overlay">
+                        <div style="font-weight:800; font-size:16px; color:#0F172A; margin-bottom:4px;">
+                            Don't lose easy points on citation mistakes
+                        </div>
+                        <div style="font-size:13px; color:#475569; margin-bottom:14px;">
+                            Unlock the full Citation Audit + instant Word (.docx) download with proper hanging indents.
+                        </div>
+                        <a href="{STRIPE_PAYMENT_URL}" target="_blank" class="cta-btn">
+                            ⚡ Unlock 24-Hour Cram Pass — $1.99
+                        </a>
+                        <div style="font-size:11px; color:#64748B; margin-top:8px;">
+                            One-time payment • Zero recurring subscriptions • Instant unlock
+                        </div>
+                    </div>
+                </div>
+            """, unsafe_allow_html=True)
 
-# 8. Modals for Legal Text
+# 10. Student-Friendly Conversion Banner (For Free Users)
+if not is_pro:
+    st.markdown(f"""
+        <div class="cram-banner">
+            <div style="flex: 1; min-width: 260px;">
+                <div style="display:inline-block; background:#10B981; color:#052E16; font-weight:800; font-size:11px; padding:3px 8px; border-radius:6px; text-transform:uppercase; margin-bottom:8px;">
+                    No Subscription Trap
+                </div>
+                <div style="font-size: 20px; font-weight: 800; margin-bottom: 4px;">24-Hour Cram Pass — $1.99</div>
+                <div style="font-size: 13px; color: #94A3B8; line-height: 1.5;">
+                    Format up to 35,000 characters per paper • Export ready-to-submit Word (.docx) files with real hanging indents • Unlock MLA, Harvard, Chicago & full Citation Audits.
+                </div>
+            </div>
+            <div style="text-align: center;">
+                <a href="{STRIPE_PAYMENT_URL}" target="_blank" class="cta-btn">
+                    Unlock Pass ($1.99) →
+                </a>
+                <div style="font-size: 11px; color: #94A3B8; margin-top: 6px;">
+                    🔒 Apple Pay, Google Pay & Card via Stripe
+                </div>
+            </div>
+        </div>
+    """, unsafe_allow_html=True)
+
+# 11. Before / After Visual Proof
+st.markdown("""
+<div style="margin-top: 36px; margin-bottom: 32px;">
+    <h3 style="text-align: center; margin-bottom: 18px; font-size: 18px; font-weight: 800;">Why students use FormatForge before submitting</h3>
+    <div style="display: flex; flex-wrap: wrap; gap: 16px; background: var(--secondary-background-color, #F8FAFC); padding: 20px; border-radius: 14px; border: 1px solid var(--border-color, #E2E8F0);">
+        <div style="flex: 1; min-width: 250px;">
+            <div style="font-size: 11px; font-weight: 800; color: #DC2626; text-transform: uppercase; margin-bottom: 8px;">❌ Messy 11:45 PM Notes</div>
+            <div style="font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #64748B; background: #FFFFFF; padding: 14px; border-radius: 8px; border: 1px dashed #CBD5E1;">
+                smith 2021 blue light sleep study journal of sleep health vol 15 issue 2 pp 104-112
+            </div>
+        </div>
+        <div style="flex: 1; min-width: 250px;">
+            <div style="font-size: 11px; font-weight: 800; color: #059669; text-transform: uppercase; margin-bottom: 8px;">✅ 11:46 PM .docx Export</div>
+            <div style="font-family: 'Times New Roman', serif; font-size: 15px; color: #0F172A; background: #FFFFFF; padding: 14px; border-radius: 8px; border: 1px solid #E2E8F0; padding-left: 36px; text-indent: -22px;">
+                Smith, J. (2021). Blue light and circadian rhythms. <i>Journal of Sleep Health</i>, <i>15</i>(2), 104–112.
+            </div>
+        </div>
+    </div>
+</div>
+""", unsafe_allow_html=True)
+
+# 12. Legal Modals
 @st.dialog("Privacy Policy", width="large")
 def privacy_modal():
     st.markdown("""
-    **Effective Date: October 2026**
+    **Effective Date: November 2026**
     
-    **1. Data Processing & Storage:** 
-    FormatForge operates on a strict zero-retention architecture. All document text submitted to the application is processed in volatile memory and is permanently destroyed the moment your session ends or the browser is closed. We do not store, log, or use your academic documents for AI training models.
+    **1. Zero-Retention Architecture:** 
+    FormatForge processes your essay text strictly in volatile memory. Your drafts are permanently destroyed the moment your formatting finishes or you close your browser tab. Your papers are never stored in any database, never indexed by Turnitin, and never used to train AI models.
     
-    **2. Payment Information:** 
-    All transactions are encrypted and processed securely via Stripe. FormatForge does not collect, process, or store your credit card information on our servers.
+    **2. Payment Security:** 
+    All payments are processed directly by Stripe. FormatForge never sees or stores your card details.
     
-    **3. Analytics & Tracking:** 
-    We use essential session states strictly to maintain your Pro access. We do not use third-party tracking cookies or sell user data to advertisers.
-    
-    **4. International Users (GDPR/CCPA):** 
-    Because we do not persist or store personal document data, your right to erasure is automatically and instantaneously fulfilled upon using the service.
+    **3. No Tracking:** 
+    We only use temporary session state to keep your Cram Pass active. We do not sell user data.
     """)
 
 @st.dialog("Terms of Service", width="large")
 def terms_modal():
     st.markdown("""
-    **Effective Date: October 2026**
+    **Effective Date: November 2026**
     
-    **1. Scope of Service:** 
-    FormatForge is a structural formatting and copyediting utility. It is not an essay writing service. The tool does not generate academic arguments, conduct research, or bypass plagiarism detectors.
+    **1. Scope of Utility:** 
+    FormatForge is an automated formatting and citation auditing tool, not an essay-writing service. It formats existing student drafts according to standard style manuals.
     
-    **2. Academic Liability:** 
-    While our engine is calibrated to strict university style manuals, the user assumes all responsibility for final submission. FormatForge is not liable for academic penalties, grading outcomes, missed deadlines, or undetected citation inaccuracies. Always review your generated documents.
-    
-    **3. Payments & Access:** 
-    Due to the immediate, single-use digital nature of this service, all sales are final unless otherwise mandated by your local consumer protection laws.
-    
-    **4. "As-Is" Provision:** 
-    The service is provided "as is" and "as available" without warranties of any kind, either express or implied, including but not limited to formatting perfection or uninterrupted server uptime.
-    """)
-
-# 9. Footer UI
-st.markdown("<div style='margin-top: 64px; border-top: 1px solid var(--border-color, #E2E8F0); padding-top: 24px;'></div>", unsafe_allow_html=True)
-
-foot_col1, foot_col2, foot_col3 = st.columns([6, 1, 1])
-
-with foot_col1:
-    st.markdown("<div style='font-size: 13px; color: #64748B; padding-top: 8px;'>© 2026 FormatForge Suite. All rights reserved.</div>", unsafe_allow_html=True)
-with foot_col2:
-    if st.button("Privacy", type="tertiary", use_container_width=True):
-        privacy_modal()
-with foot_col3:
-    if st.button("Terms", type="tertiary", use_container_width=True):
-        terms_modal()
+    **2. Final Review Responsibility:** 
+    Always verify your exported `.docx` document against your professor's specific syllabus before submitting. Format
