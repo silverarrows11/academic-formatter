@@ -305,7 +305,7 @@ def format_editor_modal():
                 3. Provide the audit notes below the separator.
                 {chr(10).join(instructions)}
                 """
-                                try:
+                try:
                     response = client.chat.completions.create(
                         model="gpt-4o-mini",
                         messages=[{"role": "system", "content": system_message}, {"role": "user", "content": user_text}],
