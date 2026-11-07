@@ -17,7 +17,7 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
-# 2. Unified High-Trust SaaS Styling (Cohesive across Landing & Studio)
+# 2. Unified High-Trust SaaS Styling
 CUSTOM_CSS = """
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap');
@@ -37,7 +37,6 @@ h1, h2, h3, h4 {
     max-width: 940px;
 }
 
-/* Hero & Studio Cards */
 .hero-card {
     background: radial-gradient(circle at top right, #1E293B, #090D16 70%);
     padding: 46px 32px;
@@ -58,7 +57,6 @@ h1, h2, h3, h4 {
     font-size: 12px;
     font-weight: 700;
     margin-bottom: 16px;
-    letter-spacing: 0.02em;
 }
 .hero-card h1 {
     color: #FFFFFF !important;
@@ -75,7 +73,6 @@ h1, h2, h3, h4 {
     line-height: 1.6;
 }
 
-/* Badges */
 .badge {
     display: inline-block;
     padding: 6px 14px;
@@ -96,7 +93,6 @@ h1, h2, h3, h4 {
     border: 1px solid #475569;
 }
 
-/* Primary & Secondary Button Polish */
 .stButton > button[kind="primary"] {
     background: linear-gradient(180deg, #10B981 0%, #059669 100%) !important;
     color: #052E16 !important;
@@ -128,7 +124,6 @@ h1, h2, h3, h4 {
     background: rgba(16, 185, 129, 0.08) !important;
 }
 
-/* Active Engine Spotlight Bubble inside Studio */
 .service-spotlight {
     background: linear-gradient(135deg, #0F172A 0%, #1E293B 100%);
     border: 1px solid #334155;
@@ -152,7 +147,6 @@ h1, h2, h3, h4 {
     font-size: 18px;
     font-weight: 800;
     color: #FFFFFF;
-    letter-spacing: -0.02em;
 }
 .spotlight-desc {
     font-size: 13.5px;
@@ -175,7 +169,22 @@ h1, h2, h3, h4 {
     font-weight: 700;
 }
 
-/* Landing Feature & Pricing Grids */
+/* Authentic White Word Page Preview Sheet */
+.word-preview-sheet {
+    background: #FFFFFF;
+    color: #111827;
+    font-family: 'Times New Roman', Times, serif;
+    padding: 48px 56px;
+    border-radius: 6px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+    margin: 16px 0;
+    max-height: 420px;
+    overflow-y: auto;
+    font-size: 14.5px;
+    line-height: 2.0;
+    border: 1px solid #CBD5E1;
+}
+
 .feature-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
@@ -211,7 +220,6 @@ h1, h2, h3, h4 {
     box-shadow: 0 12px 30px -8px rgba(16, 185, 129, 0.25);
 }
 
-/* Dark-Mode Safe Blurred Audit Card */
 .blur-container {
     position: relative;
     border: 1px solid #334155;
@@ -285,7 +293,6 @@ stripe_key = os.getenv("STRIPE_SECRET_KEY")
 if stripe_key:
     stripe.api_key = stripe_key
 
-# Rich Tool Definitions with Spotlight Benefits
 TOOL_CONFIG = {
     "academic": {
         "tab_label": "📚 Academic Paper Forge",
@@ -381,7 +388,8 @@ for k, v in defaults.items():
     if k not in st.session_state:
         st.session_state[k] = v
 
-# 5. Catch Stripe Redirect & Unlock Specific Tool
+# 5. Crash-Proof URL Pass Persistence (Idea #1)
+# Check URL query params for session verification or persisted unlock state
 if "session_id" in st.query_params:
     try:
         checkout_session = stripe.checkout.Session.retrieve(st.query_params["session_id"])
@@ -393,12 +401,19 @@ if "session_id" in st.query_params:
                 st.session_state.unlocked_tools.append(paid_tool)
             st.session_state.active_tool = paid_tool
             st.session_state.current_view = "editor"
-            tool_title = TOOL_CONFIG[paid_tool]["short_name"]
-            st.toast(f"⚡ {tool_title} Unlocked! Unlimited edits & .docx exports active.", icon="✅")
-        st.query_params.clear()
+            # Keep a clean URL parameter so refreshes preserve access without re-querying Stripe
+            st.query_params["unlocked"] = paid_tool
+            st.toast(f"⚡ {TOOL_CONFIG[paid_tool]['short_name']} Unlocked!", icon="✅")
     except Exception as e:
         st.error(f"Stripe Verification Error: {e}")
         st.query_params.clear()
+elif "unlocked" in st.query_params:
+    persisted_tool = st.query_params["unlocked"]
+    if persisted_tool in TOOL_CONFIG and persisted_tool not in st.session_state.unlocked_tools:
+        st.session_state.unlocked_tools.append(persisted_tool)
+        st.session_state.active_tool = persisted_tool
+
+is_pro = st.session_state.active_tool in st.session_state.unlocked_tools
 
 def get_stripe_url(tool_key):
     sep = "&" if "?" in STRIPE_PAYMENT_URL else "?"
@@ -411,7 +426,7 @@ def switch_tool(new_tool):
         st.session_state.editorial_notes = None
         st.session_state.input_text = ""
 
-# 6. Helper Functions (File Extraction & Multi-Mode .docx Engine)
+# 6. Helper Functions
 def extract_text_from_file(uploaded_file):
     if uploaded_file.name.endswith(".docx"):
         doc = Document(uploaded_file)
@@ -557,25 +572,23 @@ def privacy_modal():
     st.markdown(
         "**Effective Date: November 2026**\n\n"
         "**1. Zero-Retention Architecture:** FormatForge processes your text strictly in volatile memory. "
-        "Your drafts and resumes are permanently destroyed the moment your formatting finishes or you close your browser tab. "
-        "Your documents are never stored in any database, never indexed by Turnitin, and never used to train AI models.\n\n"
-        "**2. Payment Security:** All payments are processed directly by Stripe. FormatForge never sees or stores your card details.\n\n"
-        "**3. No Tracking:** We only use temporary session state to keep your unlocked tool active. We do not sell user data."
+        "Your drafts and resumes are permanently destroyed the moment your formatting finishes or you close your browser tab.\n\n"
+        "**2. Payment Security:** All payments are processed directly by Stripe.\n\n"
+        "**3. No Tracking:** We only use temporary session state to keep your unlocked tool active."
     )
 
 @st.dialog("Terms of Service", width="large")
 def terms_modal():
     st.markdown(
         "**Effective Date: November 2026**\n\n"
-        "**1. Scope of Utility:** FormatForge is an automated formatting, structural editing, and document export utility. "
-        "It formats existing drafts according to academic and professional templates.\n\n"
-        "**2. Final Review Responsibility:** Always verify your exported `.docx` document against your professor's syllabus or job application requirements before submitting.\n\n"
-        "**3. Per-Tool Session Pass Policy:** Each $1.99 pass is a single, non-recurring payment granting unlimited re-runs and `.docx` exports for the selected tool during your active session."
+        "**1. Scope of Utility:** FormatForge is an automated formatting and document export utility.\n\n"
+        "**2. Final Review Responsibility:** Always verify your exported `.docx` document before submitting.\n\n"
+        "**3. Per-Tool Session Pass Policy:** Each $1.99 pass grants unlimited re-runs and `.docx` exports for the selected tool during your session."
     )
 
 
 # ==============================================================================
-# VIEW 1: MARKETING LANDING PAGE
+# VIEW 1: MARKETING LANDING PAGE + SEO ACCORDION (Idea #3)
 # ==============================================================================
 if st.session_state.current_view == "landing":
     unlocked_count = len(st.session_state.unlocked_tools)
@@ -641,39 +654,17 @@ if st.session_state.current_view == "landing":
         unsafe_allow_html=True
     )
 
-    st.markdown('<h2 style="text-align: center; margin-bottom: 6px; font-size: 24px; font-weight: 800;">Pay Only For The Tool You Need</h2>', unsafe_allow_html=True)
-    st.markdown('<p style="text-align: center; color: #94A3B8; font-size: 14px; margin-bottom: 20px;">Zero subscriptions. Unlimited re-runs & paragraph edits on your unlocked tool.</p>', unsafe_allow_html=True)
-
-    st.markdown(
-        '<div class="pricing-grid">'
-        '<div class="price-card-free">'
-        '<div style="font-weight: 700; font-size: 13px; color: #94A3B8; text-transform: uppercase;">Free Preview (All 3 Tools)</div>'
-        '<div style="font-size: 32px; font-weight: 800; margin: 8px 0 16px 0;">$0 <span style="font-size: 14px; font-weight: 500; color: #94A3B8;">/ test any tool</span></div>'
-        '<div style="font-size: 14px; line-height: 2.0; color: #CBD5E1;">'
-        '✓ 1 free preview run per tool (up to 1,200 chars)<br>'
-        '✓ One-click raw text copy<br>'
-        '✓ Preview citation, AI-risk, or ATS audit findings<br>'
-        '✓ Zero account signup required'
-        '</div></div>'
-        '<div class="price-card-pro">'
-        '<div style="display:flex; justify-content:space-between; align-items:center;">'
-        '<span style="font-weight: 800; font-size: 13px; color: #34D399; text-transform: uppercase;">Single-Tool Session Pass</span>'
-        '<span style="background:#10B981; color:#052E16; font-size:11px; font-weight:800; padding:3px 8px; border-radius:99px;">UNLIMITED RE-EDITS</span>'
-        '</div>'
-        '<div style="font-size: 32px; font-weight: 800; margin: 8px 0 16px 0;">$1.99 <span style="font-size: 14px; font-weight: 500; color: #94A3B8;">/ per tool pass</span></div>'
-        '<div style="font-size: 14px; line-height: 2.0; color: #E2E8F0; margin-bottom: 12px;">'
-        '✓ <b>Unlimited re-runs & edits</b> on that tool (forgot a paragraph? Run it again free)<br>'
-        '✓ Up to <b>35,000 characters</b> per document<br>'
-        '✓ <b>Ready-to-submit Word (.docx)</b> download<br>'
-        '✓ Full Citation, AI-Trigger, or ATS Audit unlocked'
-        '</div>'
-        '</div></div>',
-        unsafe_allow_html=True
-    )
-
+    # SEO FAQ Accordion (Idea #3)
+    with st.expander("📖 Frequently Asked Questions & Supported Rubrics (SEO Hub)"):
+        st.markdown("""
+        - **How does FormatForge fix APA 7th hanging indents?** FormatForge automatically detects your reference list and applies strict 0.5-inch hanging indents to every reference item in the exported Microsoft Word (`.docx`) file.
+        - **Is FormatForge Turnitin-Safe?** Yes. FormatForge uses a volatile zero-retention memory architecture. Your text is processed instantly in memory and never stored in any database or indexed by AI training models.
+        - **What styling manuals are supported?** We support APA 7th Edition, MLA 9th Edition, Harvard Reference Style, Chicago 17th Edition, and IEEE standards.
+        - **How does the AI-Risk Auditor work?** It scans drafts for robotic LLM patterns, uniform sentence structures, and overused AI transition words that trigger AI detectors, while also scanning for un-cited statistical claims.
+        """)
 
 # ==============================================================================
-# VIEW 2: ELEVATED, HIGH-TRUST FORMATTING STUDIO
+# VIEW 2: FORMATTING STUDIO + VISUAL WORD SHEET PREVIEW (Idea #3)
 # ==============================================================================
 else:
     active_tool = st.session_state.active_tool
@@ -687,7 +678,6 @@ else:
         f'<span class="badge badge-free">🔒 {tool_info["short_name"]}: FREE PREVIEW</span>'
     )
 
-    # 1. Clean Top Navigation Bar
     nav_c1, nav_c2, nav_c3 = st.columns([1.2, 2.2, 1.6], vertical_alignment="center")
     with nav_c1:
         if st.button("← Home", use_container_width=True):
@@ -700,7 +690,6 @@ else:
 
     st.markdown("<div style='margin-top: 10px; margin-bottom: 6px; font-size: 11px; font-weight: 800; color: #94A3B8; text-transform: uppercase; letter-spacing: 0.06em;'>Step 1 — Select Your Formatting Engine:</div>", unsafe_allow_html=True)
 
-    # 2. Prominent 3-Card Segmented Selector (Replaces tiny radio circles)
     tab_c1, tab_c2, tab_c3 = st.columns(3)
     with tab_c1:
         label_1 = f"📚 Academic Paper {'(⚡ Active)' if 'academic' in st.session_state.unlocked_tools else '($1.99)'}"
@@ -718,7 +707,6 @@ else:
             switch_tool("resume")
             st.rerun()
 
-    # 3. Dynamic "Active Engine Spotlight" Bubble (Shows benefits of selected service)
     pills_html = "".join([f'<span class="benefit-pill">{b}</span>' for b in tool_info["benefits"]])
     unlock_cta_html = (
         '<span class="badge badge-pro">✓ Unlimited Session Edits Unlocked</span>'
@@ -738,9 +726,7 @@ else:
         unsafe_allow_html=True
     )
 
-    # 4. Streamlined Editor Workspace Card
     with st.container(border=True):
-        # Symmetrical 2-Column Toolbar (No awkward file-uploader box breaking the height)
         ctrl_col1, ctrl_col2 = st.columns([2.8, 1.2], vertical_alignment="bottom")
         
         with ctrl_col1:
@@ -776,7 +762,6 @@ else:
                 st.session_state.input_text = tool_info["sample"]
                 st.rerun()
 
-        # Main Text Input Area
         user_text = st.text_area(
             "Document Input",
             value=st.session_state.input_text,
@@ -786,7 +771,6 @@ else:
         )
         st.session_state.input_text = user_text
 
-        # Target Role Bar for Resume Mode
         if active_tool == "resume":
             st.session_state.job_target = st.text_input(
                 "🎯 Target Job Title or Paste Job Description Keywords (Optional)",
@@ -794,7 +778,6 @@ else:
                 placeholder="e.g., Investment Banking Summer Analyst / Data Science Intern (Python, SQL, Financial Modeling)"
             )
 
-        # Clean Collapsible Row for File Upload & Optional Cover Page
         opt_col1, opt_col2 = st.columns(2)
         tp_title = tp_author = tp_inst = tp_course = tp_instructor = tp_date = ""
         with opt_col1:
@@ -814,7 +797,6 @@ else:
                     tp_instructor = st.text_input("Instructor Name", placeholder="e.g., Dr. Sarah Jenkins")
                     tp_date = st.text_input("Due Date", placeholder="e.g., November 6, 2026")
 
-        # Live Word Counter & Security Status
         char_len = len(user_text)
         word_count = len(user_text.split()) if user_text.strip() else 0
         tool_free_used = st.session_state.free_uses.get(active_tool, 0)
@@ -828,7 +810,6 @@ else:
         with meta_col2:
             st.markdown('<div style="text-align:right; font-size:12px; color:#34D399; font-weight:700;">🛡️ Zero-Retention Memory • 100% Turnitin-Safe</div>', unsafe_allow_html=True)
 
-        # Primary Execution Button
         if st.button(tool_info["button_text"], type="primary", use_container_width=True):
             if not user_text.strip():
                 st.warning("Paste your text above or click '🧪 Load Sample Text' to test the engine!")
@@ -906,7 +887,6 @@ else:
                     except Exception as e:
                         st.error(f"OpenAI Error: {e}")
 
-        # High-Trust Guarantee Bar Inside Workspace
         st.markdown(
             '<div class="trust-strip">'
             '<span>🔒 256-Bit Stripe Checkout</span>'
@@ -916,7 +896,7 @@ else:
             unsafe_allow_html=True
         )
 
-    # 5. Output Deliverable & Blurred Audit Tease inside Studio
+    # 5. Output Deliverable with Visual Word Sheet Preview (Idea #3)
     if st.session_state.clean_text:
         st.markdown("<div style='margin-top: 28px;'></div>", unsafe_allow_html=True)
         st.markdown("### ✅ Submission-Ready Deliverable")
@@ -957,9 +937,19 @@ else:
                     unsafe_allow_html=True
                 )
         with dl_col2:
-            st.caption("💡 **One-Click Copy:** Hover over the top-right corner of the box below to copy raw text.")
+            st.caption("💡 **Visual Preview:** See below how your paper will look printed from Microsoft Word.")
 
-        st.code(st.session_state.clean_text, language=None, wrap_lines=True)
+        # Visual Word-Page Paper Preview Card (Idea #3)
+        formatted_html_preview = st.session_state.clean_text.replace("\n", "<br>")
+        st.markdown(
+            f'<div style="font-size: 12px; font-weight: 700; color: #94A3B8; margin-top: 16px; margin-bottom: 4px; text-transform: uppercase;">📄 Microsoft Word Document Preview:</div>'
+            f'<div class="word-preview-sheet">{formatted_html_preview}</div>',
+            unsafe_allow_html=True
+        )
+
+        # Raw Copy Box below
+        with st.expander("📋 Copy Raw Text"):
+            st.code(st.session_state.clean_text, language=None, wrap_lines=True)
 
         if st.session_state.editorial_notes:
             st.markdown("#### 🔍 Diagnostic & Rubric Audit")
@@ -977,8 +967,8 @@ else:
                     f'<div style="font-size:14px; color:#FFFFFF; font-weight:600; margin-bottom:10px;">{first_teaser}</div>'
                     f'<div class="blurred-body">{remaining_blurred}<br>• Detailed line-by-line verification completed.<br>• Formatting and margin specifications prepared for Word export.</div>'
                     '<div class="blur-cta-overlay">'
-                    f'<div style="font-weight:800; font-size:17px; color:#FFFFFF; margin-bottom:6px;">Unlock Full {tool_info["short_name"]} + Word (.docx) Export</div>'
-                    '<div style="font-size:13px; color:#CBD5E1; margin-bottom:16px;">Includes <b>unlimited re-runs & paragraph edits</b> on this tool for your entire session.</div>'
+                    f'<div style="font-weight:800; color:#111827; margin-bottom:6px;">Unlock Full {tool_info["short_name"]} + Word (.docx) Export</div>'
+                    '<div style="font-size:13px; color:#475569; margin-bottom:16px;">Includes <b>unlimited re-runs & paragraph edits</b> on this tool for your entire session.</div>'
                     f'<a href="{stripe_tool_url}" target="_blank" class="cta-btn">⚡ Unlock {tool_info["short_name"]} Pass — $1.99</a>'
                     '<div style="font-size:11px; color:#94A3B8; margin-top:10px;">One-time payment • Zero recurring subscriptions • Instant activation</div>'
                     '</div></div>',
