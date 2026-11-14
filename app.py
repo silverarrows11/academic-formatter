@@ -1,6 +1,9 @@
 import io
 import re
 import os
+import sys
+import hmac
+import hashlib
 import html
 import streamlit as st
 import openai
@@ -30,6 +33,8 @@ h1, h2, h3, h4 {
     letter-spacing: -0.03em !important;
 }
 #MainMenu, header, footer { visibility: hidden; }
+[data-testid="stToolbar"], [data-testid="stDecoration"], [data-testid="stStatusWidget"],
+[data-testid="stAppDeployButton"], .stDeployButton { display: none !important; }
 
 .block-container {
     padding-top: 1.5rem;
@@ -346,13 +351,46 @@ h1, h2, h3, h4 {
     padding: 26px;
     border-radius: 16px;
 }
+
+/* Locked-result strip (free preview) */
+.lock-strip {
+    background: linear-gradient(145deg, #0F172A 0%, #1E293B 100%);
+    border: 1px solid #10B981;
+    border-radius: 14px;
+    padding: 22px;
+    text-align: center;
+    margin-bottom: 18px;
+}
 </style>
 """
 st.markdown(CUSTOM_CSS, unsafe_allow_html=True)
 
 # 3. Configuration Limits & Credentials
-FREE_CHAR_LIMIT = 1200
+FREE_INPUT_LIMIT = 6000    # characters a free user may submit for their one free preview run
+FREE_TEASER_CHARS = 900    # how much of the formatted result free users see
 PRO_MAX_CHARS = 35000
+
+# Set these in Railway. UNLOCK_SECRET is required for passes to survive a page refresh.
+UNLOCK_SECRET = os.getenv("UNLOCK_SECRET", "")
+CONTACT_EMAIL = os.getenv("CONTACT_EMAIL", "info@formatforge.help").strip()
+try:
+    REFUND_DAYS = int(os.getenv("REFUND_DAYS", "0"))
+except ValueError:
+    REFUND_DAYS = 0
+
+CONTACT_MD = f"\n\n**Contact:** {CONTACT_EMAIL}" if CONTACT_EMAIL else ""
+if CONTACT_EMAIL and REFUND_DAYS > 0:
+    REFUND_MD = (f"\n\n**4. Refunds:** If the tool does not work for you, email {CONTACT_EMAIL} within "
+                 f"{REFUND_DAYS} days of purchase with your Stripe receipt and we will refund the $1.99.")
+    REFUND_NOTE = f"{REFUND_DAYS}-day refund promise: email {html.escape(CONTACT_EMAIL)}"
+else:
+    REFUND_MD = ""
+    REFUND_NOTE = "One-time payment • No subscription"
+
+FOOTER_TEXT = "© 2026 FormatForge • AI-assisted formatting: review results before you submit"
+if CONTACT_EMAIL:
+    FOOTER_TEXT += (f' • <a href="mailto:{html.escape(CONTACT_EMAIL)}" style="color:#94A3B8;">'
+                    f'{html.escape(CONTACT_EMAIL)}</a>')
 STRIPE_PAYMENT_URL = "https://buy.stripe.com/cNidRbdxg5l4c9902l5Ne01"
 DELIMITER = "---AUDIT_AND_FEEDBACK---"
 
@@ -365,7 +403,7 @@ TOOL_CONFIG = {
         "short_name": "Academic Paper Forge",
         "icon": "📚",
         "headline": "📚 Academic Paper & Citation Forge",
-        "tagline": "Fix broken in-text citations, alphabetize bibliographies, and export a university-rubric Word (.docx) file.",
+        "tagline": "Fix broken in-text citations, alphabetize bibliographies, and export a formatted Word (.docx) file.",
         "benefits": [
             "✓ Auto Hanging Indents (.docx)",
             "✓ Missing Reference Cross-Check",
@@ -423,10 +461,10 @@ TOOL_CONFIG = {
         "short_name": "ATS Resume Forge",
         "icon": "💼",
         "headline": "💼 Wall Street & Harvard 1-Page ATS Resume",
-        "tagline": "Transform messy work history or LinkedIn bios into a single-page .docx resume built for standard ATS parsers.",
+        "tagline": "Transform messy work history or LinkedIn bios into a single-page, single-column .docx resume with a clean, ATS-friendly layout.",
         "benefits": [
             "✓ Wall Street XYZ Impact Bullet Rewrites",
-            "✓ Compact 1-Page Margin & Font Lock",
+            "✓ Compact 0.6-inch Margins, Built for 1 Page",
             "✓ Target Job Keyword Alignment",
             "✓ Clean Single-Column .docx Export"
         ],
@@ -465,18 +503,63 @@ defaults = {
     "clean_text": None,
     "editorial_notes": None,
     "selected_style": "APA 7th Edition",
-    "current_view": "landing"
+    "current_view": "landing",
+    "deeplink_done": False,
+    "run_in_words": 0,
+    "just_unlocked": None
 }
 for k, v in defaults.items():
     if k not in st.session_state:
         st.session_state[k] = v
 
-# 5. Crash-Proof URL Pass Recovery & Stripe Verification
-if "unlocked" in st.query_params:
-    saved_tools = st.query_params["unlocked"].split(",")
-    for t in saved_tools:
-        if t in TOOL_CONFIG and t not in st.session_state.unlocked_tools:
+# 5. Signed Pass Recovery, Stripe Verification & Deep Links
+TOOL_ALIASES = {"cleaner": "humanizer"}  # lets marketing links use friendlier names
+
+def _pass_signature(tool_key):
+    msg = f"formatforge:pass:v1:{tool_key}".encode()
+    return hmac.new(UNLOCK_SECRET.encode(), msg, hashlib.sha256).hexdigest()[:32]
+
+def build_pass_param(tools):
+    """Signed value for the ?pass= URL parameter ('' when no secret is configured)."""
+    if not UNLOCK_SECRET:
+        return ""
+    return ",".join(f"{t}.{_pass_signature(t)}" for t in tools if t in TOOL_CONFIG)
+
+def read_pass_param(value):
+    """Return only the tools whose signature checks out. Typed-in or edited values unlock nothing."""
+    if not UNLOCK_SECRET or not value:
+        return []
+    tools = []
+    for item in str(value).split(","):
+        tool, _, sig = item.strip().partition(".")
+        if tool in TOOL_CONFIG and sig and hmac.compare_digest(sig.encode(), _pass_signature(tool).encode()):
+            tools.append(tool)
+    return tools
+
+@st.cache_resource
+def _warn_missing_secret():
+    print("WARNING: UNLOCK_SECRET is not set. Passes last for the current session only and cannot be restored from the URL.", file=sys.stderr)
+    return True
+
+if not UNLOCK_SECRET:
+    _warn_missing_secret()
+
+if "pass" in st.query_params:
+    for t in read_pass_param(st.query_params["pass"]):
+        if t not in st.session_state.unlocked_tools:
             st.session_state.unlocked_tools.append(t)
+if "unlocked" in st.query_params:
+    del st.query_params["unlocked"]  # the old unsigned parameter is no longer honoured
+
+# Deep link from marketing pages, e.g. ?tool=resume&utm_source=seo (first load of a session only)
+if not st.session_state.deeplink_done:
+    st.session_state.deeplink_done = True
+    _requested = st.query_params.get("tool")
+    _requested = TOOL_ALIASES.get(_requested, _requested)
+    if _requested in TOOL_CONFIG and "session_id" not in st.query_params:
+        st.session_state.active_tool = _requested
+        st.session_state.current_view = "editor"
+        st.session_state.studio_step = 2
 
 if "session_id" in st.query_params:
     try:
@@ -489,16 +572,24 @@ if "session_id" in st.query_params:
                 st.session_state.unlocked_tools.append(paid_tool)
             st.session_state.active_tool = paid_tool
             st.session_state.current_view = "editor"
+            st.session_state.just_unlocked = paid_tool
             # Drop user directly into Step 3 if they already have output, else Step 2
             st.session_state.studio_step = 3 if st.session_state.clean_text else 2
             tool_title = TOOL_CONFIG[paid_tool]["short_name"]
             st.toast(f"⚡ {tool_title} Unlocked! Unlimited edits & .docx exports active.", icon="✅")
-        
+        else:
+            st.warning("We could not confirm that payment yet. If you were charged, please refresh in a minute."
+                       + (f" Still stuck? Email {CONTACT_EMAIL}." if CONTACT_EMAIL else ""))
+
         st.query_params.clear()
-        if st.session_state.unlocked_tools:
-            st.query_params["unlocked"] = ",".join(st.session_state.unlocked_tools)
+        signed_pass = build_pass_param(st.session_state.unlocked_tools)
+        if signed_pass:
+            st.query_params["pass"] = signed_pass
     except Exception as e:
-        st.error(f"Stripe Verification Error: {e}")
+        print(f"Stripe verification failed: {type(e).__name__}: {e}", file=sys.stderr)
+        st.error("We could not verify your payment automatically. If you were charged, "
+                 + (f"email {CONTACT_EMAIL} with your Stripe receipt and we will sort it out." if CONTACT_EMAIL
+                    else "please contact support with your Stripe receipt."))
         st.query_params.clear()
 
 def get_stripe_url(tool_key):
@@ -511,6 +602,33 @@ def extract_text_from_file(uploaded_file):
         doc = Document(uploaded_file)
         return "\n".join([p.text for p in doc.paragraphs if p.text])
     return uploaded_file.read().decode("utf-8", errors="ignore")
+
+def make_teaser(text, max_chars=FREE_TEASER_CHARS):
+    """Opening of the result for free users, cut at a sentence/paragraph boundary.
+    Returns (teaser_text, words_not_shown). The full text never leaves the server."""
+    paragraphs = [p for p in text.split("\n") if p.strip()]
+    kept, used = [], 0
+    for p in paragraphs:
+        room = max_chars - used
+        if len(p) <= room:
+            kept.append(p)
+            used += len(p) + 1
+            continue
+        if room > 200 or not kept:
+            budget = room if room > 200 else max_chars
+            cut = p[:budget]
+            end = max(cut.rfind(". "), cut.rfind("? "), cut.rfind("! "))
+            piece = cut[:end + 1] if end > budget // 3 else (cut.rsplit(" ", 1)[0] if " " in cut else cut)
+            kept.append(piece.strip())
+        break
+    teaser = "\n".join(kept)
+    return teaser, max(0, len(text.split()) - len(teaser.split()))
+
+def split_audit_lines(notes):
+    """Individual audit items (bullets if the model used them, otherwise non-empty lines)."""
+    lines = [l.strip() for l in notes.split("\n") if l.strip()]
+    bullets = [l for l in lines if re.match(r"^([-•*]|\d+[.)])\s", l)]
+    return bullets or lines
 
 def render_word_preview_html(content, tool_mode):
     paragraphs = [p.strip() for p in content.split('\n') if p.strip()]
@@ -696,21 +814,31 @@ def create_smart_docx(content, tool_mode, style_name="APA 7th Edition", title_in
 def privacy_modal():
     st.markdown(
         "**Effective Date: November 2026**\n\n"
-        "**1. Zero-Retention Architecture:** FormatForge processes your text strictly in volatile memory. "
-        "Your drafts and resumes are permanently destroyed the moment your formatting finishes or you close your browser tab. "
-        "Your documents are never stored in any database, never submitted to Turnitin or external repositories, and never used to train AI models.\n\n"
-        "**2. Payment Security:** All payments are processed directly by Stripe. FormatForge never sees or stores your card details.\n\n"
-        "**3. No Tracking:** We only use temporary session state and URL parameters to keep your unlocked tool active. We do not sell user data."
+        "**1. Your documents:** FormatForge does not store your documents. The text you submit and the result we generate "
+        "are held in server memory only while your browser session is open, and FormatForge does not write them to a database or disk.\n\n"
+        "**2. AI processing:** To produce your result, your text is sent to OpenAI's API. OpenAI processes it under its own API terms "
+        "and privacy policy, which govern how long OpenAI may keep it. FormatForge does not use your text to train AI models.\n\n"
+        "**3. Payments:** Payments are processed by Stripe. FormatForge never sees or stores your card details.\n\n"
+        "**4. Your pass:** Unlocked tools are remembered through a signed token in your browser's address bar. "
+        "FormatForge has no accounts and runs no customer database of its own.\n\n"
+        "**5. Server logs:** Our hosting provider may keep standard technical logs (such as IP addresses and request times). "
+        "We do not sell user data."
+        + CONTACT_MD
     )
 
 @st.dialog("Terms of Service", width="large")
 def terms_modal():
     st.markdown(
         "**Effective Date: November 2026**\n\n"
-        "**1. Scope of Utility:** FormatForge is an automated formatting, structural editing, and document export utility. "
-        "It formats existing drafts according to academic and professional templates. It does not check live internet databases for web plagiarism or guarantee third-party grading/detection scores.\n\n"
-        "**2. Final Review Responsibility:** Always verify your exported `.docx` document against your professor's syllabus or job application requirements before submitting.\n\n"
-        "**3. Single-Tool Pass Policy:** Each $1.99 pass is a single, non-recurring payment granting unlimited re-runs and `.docx` exports for the selected tool."
+        "**1. What FormatForge is:** An automated formatting and editing tool that uses AI to reformat text you provide. "
+        "It does not check text against plagiarism or AI-detection tools, does not verify that any source exists, and makes no promise "
+        "about grades, interviews, hiring decisions or any third-party score.\n\n"
+        "**2. You are responsible for the result:** AI output can contain mistakes. Always review the result and check it against your "
+        "instructor's, publisher's or employer's requirements before you submit it.\n\n"
+        f"**3. Single-Tool Pass:** Each $1.99 pass is a one-time payment (not a subscription) that unlocks unlimited re-runs and `.docx` exports "
+        f"for the one tool you purchased, up to {PRO_MAX_CHARS:,} characters per document."
+        + REFUND_MD
+        + CONTACT_MD
     )
 
 
@@ -735,8 +863,8 @@ if st.session_state.current_view == "landing":
     st.markdown(
         '<div class="hero-card">'
         '<div class="hero-pill">⚡ 3 Specialized Document Engines • $1.99 Per Tool Pass</div>'
-        '<h1>Messy draft in.<br>Submission-ready Word doc out.</h1>'
-        '<p>Whether you have an 11:59 PM paper with broken citations, a ChatGPT draft full of Markdown clutter, or a messy internship resume—forge a rubric-compliant .docx in 3 guided steps.</p>'
+        '<h1>Messy draft in.<br>Clean, formatted Word doc out.</h1>'
+        '<p>Whether you have an 11:59 PM paper with broken citations, a ChatGPT draft full of Markdown clutter, or a messy internship resume—turn it into a cleanly formatted .docx in 3 guided steps. Free preview first.</p>'
         '</div>',
         unsafe_allow_html=True
     )
@@ -780,9 +908,9 @@ if st.session_state.current_view == "landing":
         '<div style="font-weight: 700; font-size: 13px; color: #94A3B8; text-transform: uppercase;">Free Preview (All 3 Tools)</div>'
         '<div style="font-size: 32px; font-weight: 800; margin: 8px 0 16px 0;">$0 <span style="font-size: 14px; font-weight: 500; color: #94A3B8;">/ test any tool</span></div>'
         '<div style="font-size: 14px; line-height: 2.0; color: #CBD5E1;">'
-        '✓ 1 free preview run per tool (up to 1,200 chars)<br>'
+        '✓ 1 free preview run per tool (up to 6,000 characters)<br>'
         '✓ Live simulated Microsoft Word page preview<br>'
-        '✓ Preview citation, AI-cliché, or ATS audit findings<br>'
+        '✓ See the opening of your result and the first audit finding<br>'
         '✓ Zero account signup required'
         '</div></div>'
         '<div class="price-card-pro">'
@@ -794,7 +922,7 @@ if st.session_state.current_view == "landing":
         '<div style="font-size: 14px; line-height: 2.0; color: #E2E8F0;">'
         '✓ <b>Unlimited re-runs & edits</b> on that tool (forgot a paragraph? Run it again free)<br>'
         '✓ Up to <b>35,000 characters</b> per document<br>'
-        '✓ <b>Ready-to-submit Word (.docx)</b> & One-Click Copy<br>'
+        '✓ <b>Word (.docx) download</b> & one-click copy<br>'
         '✓ Full Citation, AI-Cliché, or ATS Audit unlocked'
         '</div></div></div>',
         unsafe_allow_html=True
@@ -804,9 +932,14 @@ if st.session_state.current_view == "landing":
     with st.expander("Is the $1.99 pass a recurring subscription?"):
         st.write("No. It is a strict one-time payment of $1.99 via Stripe (Apple Pay, Google Pay, or card). You will never be billed again automatically.")
     with st.expander("What if I notice a typo or forgot a paragraph after paying $1.99?"):
-        st.write("You get unlimited re-runs on the tool you unlocked! Your unlocked pass is also saved directly in your browser URL, so even if you refresh the page, you can tweak paragraphs and re-export your `.docx` as many times as you need.")
-    with st.expander("Are my papers stored or submitted to Turnitin?"):
-        st.write("Never. FormatForge operates in zero-retention volatile memory. Your text is processed on the fly and immediately discarded—meaning your paper is never indexed into Turnitin or any third-party repository.")
+        st.write("You get unlimited re-runs on the tool you unlocked! Your unlocked pass is kept in your browser's address bar as a signed link, so a refresh will not lock you out. Bookmark the page to come back to it later.")
+    with st.expander("Are my documents stored?"):
+        st.write("FormatForge does not store your documents: your text is processed in server memory and is not saved to a database or disk by us. To generate your result, the text is sent to OpenAI's API (see Privacy at the bottom of the page for details).")
+    with st.expander("Can I trust the AI's output?"):
+        st.write("It is AI-assisted and can make mistakes. FormatForge reformats and flags what is in your text; it does not verify that your sources exist or are accurate. Always review the result before you submit it.")
+    if REFUND_MD:
+        with st.expander("What if it does not work for me?"):
+            st.write(f"Email {CONTACT_EMAIL} within {REFUND_DAYS} days of purchase with your Stripe receipt and we will refund the $1.99.")
 
 
 # ==============================================================================
@@ -888,6 +1021,8 @@ else:
     # STEP 2: ADD YOUR DRAFT & RUN ENGINE (Single Primary Green CTA)
     # --------------------------------------------------------------------------
     elif step == 2:
+        if st.session_state.just_unlocked == active_tool and is_tool_pro:
+            st.success("Payment confirmed: this tool is unlocked. FormatForge does not store your text, so paste your draft again to get the full result.")
         # Compact header bar showing chosen tool + quick switch button
         top_b1, top_b2 = st.columns([3.2, 1.2], vertical_alignment="center")
         with top_b1:
@@ -981,11 +1116,11 @@ else:
             meta_col1, meta_col2 = st.columns(2)
             with meta_col1:
                 if not is_tool_pro:
-                    st.caption(f"📏 **{word_count} words** ({char_len}/{FREE_CHAR_LIMIT} free preview chars) • Free previews left: **{max(0, 1 - tool_free_used)}**")
+                    st.caption(f"📏 **{word_count} words** ({char_len:,}/{FREE_INPUT_LIMIT:,} free preview chars) • Free previews left: **{max(0, 1 - tool_free_used)}**")
                 else:
                     st.caption(f"📏 **{word_count} words** ({char_len:,}/{PRO_MAX_CHARS:,} chars) • **⚡ Unlimited Session Edits Active**")
             with meta_col2:
-                st.markdown('<div style="text-align:right; font-size:12px; color:#94A3B8; font-weight:600;">🛡️ Private & Unindexed (Never Submitted to Turnitin)</div>', unsafe_allow_html=True)
+                st.markdown('<div style="text-align:right; font-size:12px; color:#94A3B8; font-weight:600;">🔒 Not stored by FormatForge</div>', unsafe_allow_html=True)
 
             # THE ONLY GREEN BUTTON ON STEP 2
             if st.button(tool_info["button_text"], type="primary", use_container_width=True):
@@ -994,11 +1129,12 @@ else:
                 elif not is_tool_pro and tool_free_used >= 1:
                     st.error(f"You've used your free preview for {tool_info['short_name']}!")
                     st.markdown(f'<a href="{stripe_tool_url}" target="_blank" class="cta-btn">⚡ Unlock Unlimited {tool_info["short_name"]} Pass ($1.99) →</a>', unsafe_allow_html=True)
-                elif not is_tool_pro and char_len > FREE_CHAR_LIMIT:
-                    st.error(f"Your draft is {char_len:,} characters (Free preview limit is {FREE_CHAR_LIMIT:,}). Unlock the $1.99 Pass to format up to 35,000 characters!")
+                elif not is_tool_pro and char_len > FREE_INPUT_LIMIT:
+                    st.error(f"Your draft is {char_len:,} characters. The free preview accepts up to {FREE_INPUT_LIMIT:,}. Unlock the $1.99 Pass to format up to {PRO_MAX_CHARS:,} characters.")
                     st.markdown(f'<a href="{stripe_tool_url}" target="_blank" class="cta-btn">⚡ Unlock Full Length + .docx Export ($1.99) →</a>', unsafe_allow_html=True)
+                elif is_tool_pro and char_len > PRO_MAX_CHARS:
+                    st.error(f"Your draft is {char_len:,} characters. The maximum per document is {PRO_MAX_CHARS:,}. Please split it into two parts.")
                 else:
-                    client = openai.OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
                     with st.status(f"Running {tool_info['short_name']}...", expanded=True) as status_box:
                         st.write(f"⚙️ {tool_info['steps'][0]}")
                         if active_tool == "academic":
@@ -1006,7 +1142,8 @@ else:
                                 f"You are an elite university academic copyeditor. Reformat the user's input strictly according to {st.session_state.selected_style} standards.\n"
                                 "- Fix all in-text citations and alphabetize the reference list.\n"
                                 "- Wrap journal or book titles in single asterisks (*Title*) for proper Word italicization.\n"
-                                "- Keep body paragraphs intact while fixing citation syntax.\n\n"
+                                "- Keep body paragraphs intact while fixing citation syntax.\n"
+                                "- Never invent or change sources, authors, years, titles, journals, or page numbers. If a reference is incomplete, keep it as written and flag it in the audit.\n\n"
                                 "Output Format:\n"
                                 "1. Output ONLY the clean, formatted academic paper first. No markdown code fences.\n"
                                 f"2. On a new line by itself, output this exact separator:\n{DELIMITER}\n"
@@ -1016,11 +1153,12 @@ else:
                             )
                         elif active_tool == "humanizer":
                             system_message = (
-                                "You are an academic AI-Cliché Cleaner and Citation-Gap Auditor. Transform raw AI/ChatGPT drafts into natural, authentic human academic prose.\n"
+                                "You are an academic AI-Cliché Cleaner and Citation-Gap Auditor. Clean up raw AI/ChatGPT drafts into clear, natural academic prose without changing their meaning.\n"
                                 "- Strip all Markdown artifacts (### headers, **bold** clutter, bullet dumps) into clean, cohesive paragraphs.\n"
-                                "- Replace overused LLM transition clichés ('delve', 'tapestry', 'testament', 'crucial', 'furthermore', 'multifaceted') with natural sentence variation.\n\n"
+                                "- Replace overused LLM transition clichés ('delve', 'tapestry', 'testament', 'crucial', 'furthermore', 'multifaceted') with natural sentence variation.\n"
+                                "- Do not add facts, statistics, or citations that are not in the input.\n\n"
                                 "Output Format:\n"
-                                "1. Output ONLY the cleaned, natural human-sounding document first. No markdown code fences.\n"
+                                "1. Output ONLY the cleaned document first. No markdown code fences.\n"
                                 f"2. On a new line by itself, output this exact separator:\n{DELIMITER}\n"
                                 "3. Below the separator, provide a bulleted 'AI-Cliché & Citation-Gap Audit':\n"
                                 "- List the exact robotic AI phrases and Markdown clutter you removed.\n"
@@ -1032,17 +1170,19 @@ else:
                                 f"You are an elite Wall Street & Tech ATS Resume writer. Reformat the user's input into a strict 1-page Harvard/Wall Street ATS Resume ({target_ctx}).\n"
                                 "- First line: Candidate Name. Second line: Contact info separated by ' | '.\n"
                                 "- Use clean uppercase section headers: EDUCATION, EXPERIENCE, PROJECTS, SKILLS.\n"
-                                "- Rewrite weak experience bullets using the XYZ impact formula (Accomplished [X] as measured by [Y], by doing [Z]) with strong action verbs.\n\n"
+                                "- Rewrite weak experience bullets using the XYZ impact formula (Accomplished [X] as measured by [Y], by doing [Z]) with strong action verbs.\n"
+                                "- Never invent numbers, employers, titles, dates, degrees, or achievements. Use only metrics that appear in the input. If a bullet has no metric, keep it factual without one and list it in the audit as needing a real number from the candidate.\n\n"
                                 "Output Format:\n"
                                 "1. Output ONLY the formatted resume text first. Start bullet points with '• '. No markdown code fences.\n"
                                 f"2. On a new line by itself, output this exact separator:\n{DELIMITER}\n"
                                 "3. Below the separator, provide a bulleted 'ATS & Impact Audit':\n"
-                                "- Highlight weak bullets you upgraded into quantified impact statements.\n"
+                                "- Highlight weak bullets you rewrote, and list bullets that still need a real number from the candidate.\n"
                                 "- List 3 high-value ATS keywords recommended for their target role."
                             )
 
                         try:
                             st.write(f"🔍 {tool_info['steps'][1]}")
+                            client = openai.OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
                             response = client.chat.completions.create(
                                 model="gpt-4o-mini",
                                 messages=[
@@ -1062,6 +1202,8 @@ else:
                                 st.session_state.clean_text = output_content.strip()
                                 st.session_state.editorial_notes = "• Document standardized and formatted.\n• Structural audit completed."
                                 
+                            st.session_state.run_in_words = word_count
+                            st.session_state.just_unlocked = None
                             if not is_tool_pro:
                                 st.session_state.free_uses[active_tool] = tool_free_used + 1
                             
@@ -1071,7 +1213,9 @@ else:
                             
                         except Exception as e:
                             status_box.update(label="Error during processing", state="error", expanded=True)
-                            st.error(f"OpenAI Error: {e}")
+                            print(f"OpenAI error: {type(e).__name__}: {e}", file=sys.stderr)
+                            st.error("Something went wrong while processing your text. Your draft is still here, so please try again in a moment."
+                                     + (f" If it keeps happening, email {CONTACT_EMAIL}." if CONTACT_EMAIL else ""))
 
     # --------------------------------------------------------------------------
     # STEP 3: REVIEW DELIVERABLE & EXPORT .DOCX (No Scrolling, Zero Truncation)
@@ -1088,7 +1232,9 @@ else:
                 st.session_state.studio_step = 2
                 st.rerun()
         with act_c2:
-            st.markdown('<div style="text-align:right; font-size:13px; color:#94A3B8;">Need to add a forgotten paragraph? Click <b>Edit Draft</b>—unlimited re-runs are included with your pass.</div>', unsafe_allow_html=True)
+            edit_hint = ("Need to add a forgotten paragraph? Click <b>Edit Draft</b>—unlimited re-runs are included with your pass."
+                         if is_tool_pro else "Your free preview run is used. Unlock this tool to edit and re-run without limits.")
+            st.markdown(f'<div style="text-align:right; font-size:13px; color:#94A3B8;">{edit_hint}</div>', unsafe_allow_html=True)
 
         st.markdown("<div style='margin-top: 10px;'></div>", unsafe_allow_html=True)
 
@@ -1097,11 +1243,11 @@ else:
         audit_status_html = (
             '<span style="color:#34D399;">✓ Full Audit Unlocked</span>'
             if is_tool_pro else
-            '<span style="color:#FBBF24;">⚠️ Findings Flagged (Preview)</span>'
+            '<span style="color:#FBBF24;">🔒 First finding shown</span>'
         )
         st.markdown(
             '<div class="summary-strip">'
-            f'<div class="summary-box"><div class="summary-label">Words Processed</div><div class="summary-val">{out_words:,} words</div></div>'
+            f'<div class="summary-box"><div class="summary-label">Words (in → out)</div><div class="summary-val">{st.session_state.run_in_words:,} → {out_words:,}</div></div>'
             f'<div class="summary-box"><div class="summary-label">Active Engine</div><div class="summary-val">{tool_info["short_name"]}</div></div>'
             f'<div class="summary-box"><div class="summary-label">Diagnostic Audit</div><div class="summary-val">{audit_status_html}</div></div>'
             '</div>',
@@ -1122,7 +1268,7 @@ else:
         if is_tool_pro:
             docx_file = create_smart_docx(st.session_state.clean_text, active_tool, st.session_state.selected_style, title_data)
             st.download_button(
-                label=f"📥 Download Ready-to-Submit Microsoft Word (.docx)",
+                label="📥 Download Microsoft Word (.docx)",
                 data=docx_file,
                 file_name=f"FormatForge_{active_tool.capitalize()}.docx",
                 mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
@@ -1130,12 +1276,16 @@ else:
                 use_container_width=True
             )
 
+        if is_tool_pro:
+            st.caption("🔖 Bookmark this page to keep your pass. There are no accounts, so the link is your key.")
+        st.caption("AI-assisted result. Review it before you submit or send it. FormatForge reformats and flags what is in your text; it does not verify that sources exist.")
+
         # Simulated Microsoft Word (.docx) Sheet Preview
         preview_text = st.session_state.clean_text
-        if not is_tool_pro and len(preview_text) > 550:
-            preview_html = render_word_preview_html(preview_text[:550] + "\n\n[... Unlock $1.99 Tool Pass below to view & download full formatted document ...]", active_tool)
-        else:
-            preview_html = render_word_preview_html(preview_text, active_tool)
+        locked_words = 0
+        if not is_tool_pro:
+            preview_text, locked_words = make_teaser(preview_text)
+        preview_html = render_word_preview_html(preview_text, active_tool)
 
         st.markdown(
             '<div class="word-preview-wrapper">'
@@ -1148,6 +1298,20 @@ else:
             unsafe_allow_html=True
         )
 
+        if not is_tool_pro:
+            more_line = (f"<b>{locked_words:,} more words</b> are formatted and ready."
+                         if locked_words > 0 else "Your full result is ready.")
+            # THE ONLY GREEN CTA FOR FREE USERS ON STEP 3
+            st.markdown(
+                '<div class="lock-strip">'
+                f'<div style="font-size:16px; color:#FFFFFF; margin-bottom:4px;">{more_line}</div>'
+                '<div style="font-size:13px; color:#CBD5E1; margin-bottom:16px;">Unlock this tool to read the full result, see the full audit, and download the Word (.docx) file.</div>'
+                f'<a href="{stripe_tool_url}" target="_blank" class="cta-btn">⚡ Unlock {tool_info["short_name"]} — $1.99 one-time</a>'
+                f'<div style="font-size:11px; color:#94A3B8; margin-top:10px;">🔒 {REFUND_NOTE}</div>'
+                '</div>',
+                unsafe_allow_html=True
+            )
+
         if is_tool_pro:
             with st.expander("📋 Copy Raw Text (One-Click Clipboard)"):
                 st.code(st.session_state.clean_text, language=None, wrap_lines=True)
@@ -1159,22 +1323,21 @@ else:
                 with st.container(border=True):
                     st.markdown(st.session_state.editorial_notes)
             else:
-                lines = [line.strip() for line in st.session_state.editorial_notes.split('\n') if line.strip()]
-                first_teaser = lines[0] if lines else "⚠️ Potential issues detected in your draft."
-                remaining_blurred = "<br>".join(lines[1:]) if len(lines) > 1 else "• Additional structural findings and missing citations flagged.<br>• Phrasing and rubric alignment recommendations ready."
-                
-                # THE ONLY GREEN CTA FOR FREE USERS ON STEP 3
+                findings = split_audit_lines(st.session_state.editorial_notes)
+                total = len(findings)
+                if findings:
+                    first_finding = html.escape(re.sub(r"\*\*|__", "", re.sub(r"^([-•*]|\d+[.)])\s*", "", findings[0])))
+                else:
+                    first_finding = "No issues were flagged in this preview."
+                remaining = max(0, total - 1)
+                lock_line = (f"{remaining} more item{'s' if remaining != 1 else ''} in the full audit."
+                             if remaining > 0 else "The full audit and the .docx download come with the pass.")
                 st.markdown(
                     '<div class="blur-container">'
-                    f'<div style="font-weight:800; color:#F87171; font-size:14px; margin-bottom:6px;">🚨 Diagnostic Audit Preview (1 of {max(3, len(lines))} findings shown):</div>'
-                    f'<div style="font-size:14px; color:#FFFFFF; font-weight:600; margin-bottom:10px;">{first_teaser}</div>'
-                    f'<div class="blurred-body">{remaining_blurred}<br>• Detailed line-by-line verification completed.<br>• Formatting and margin specifications prepared for Word export.</div>'
-                    '<div class="blur-cta-overlay">'
-                    f'<div style="font-weight:800; font-size:18px; color:#FFFFFF; margin-bottom:6px;">Download .docx + Unlock Full {tool_info["short_name"]}</div>'
-                    '<div style="font-size:13px; color:#CBD5E1; margin-bottom:16px;">Includes instant Microsoft Word (.docx) download, full diagnostic audit, and <b>unlimited re-runs & edits</b> on this tool.</div>'
-                    f'<a href="{stripe_tool_url}" target="_blank" class="cta-btn">⚡ Unlock {tool_info["short_name"]} Pass — $1.99</a>'
-                    '<div style="font-size:11px; color:#94A3B8; margin-top:10px;">🔒 One-time payment • Zero recurring subscriptions • Saved to your URL</div>'
-                    '</div></div>',
+                    f'<div style="font-weight:800; color:#FBBF24; font-size:14px; margin-bottom:6px;">Audit preview: first of {total} item{"s" if total != 1 else ""}</div>'
+                    f'<div style="font-size:14px; color:#FFFFFF; font-weight:600; margin-bottom:12px;">{first_finding}</div>'
+                    f'<div style="font-size:13px; color:#94A3B8;">🔒 {lock_line}</div>'
+                    '</div>',
                     unsafe_allow_html=True
                 )
 
@@ -1185,7 +1348,7 @@ st.markdown("<div style='margin-top: 48px; border-top: 1px solid rgba(148, 163, 
 
 foot_col1, foot_col2, foot_col3 = st.columns([6, 1, 1])
 with foot_col1:
-    st.markdown("<div style='font-size: 13px; color: #64748B; padding-top: 8px;'>© 2026 FormatForge Suite. Built for students & early careers.</div>", unsafe_allow_html=True)
+    st.markdown(f"<div style='font-size: 13px; color: #64748B; padding-top: 8px;'>{FOOTER_TEXT}</div>", unsafe_allow_html=True)
 with foot_col2:
     if st.button("Privacy", type="tertiary", use_container_width=True):
         privacy_modal()
