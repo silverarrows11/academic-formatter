@@ -1,0 +1,52 @@
+{
+  "_README": "Single source of truth for everything the agents may say about FormatForge. Workers may only state product facts found here. Reviewers check drafts against it. Edit it, then set owner_confirmed to true. Nothing publishes until you do.",
+  "owner_confirmed": false,
+  "product_name": "FormatForge",
+  "site_url": "https://guides.formatforge.help",
+  "app_url": "https://formatforge.help",
+  "contact_email": "info@formatforge.help",
+  "one_line": "FormatForge turns rough text into a cleanly formatted Microsoft Word (.docx) document, with three tools: Academic Paper Forge, AI Cleaner & Auditor, and ATS Resume Forge.",
+  "engines": {
+    "academic": {
+      "name": "Academic Paper Forge",
+      "does": [
+        "Fixes in-text citations and reference entries in APA 7, MLA 9, Harvard, Chicago 17 or IEEE style (the free preview runs in APA 7 only)",
+        "Flags in-text citations that are missing from the reference list, and the reverse",
+        "Exports a .docx with 1 inch margins, double line spacing (1.15 for IEEE) and 0.5 inch hanging indents on the reference list",
+        "Can add an optional cover page from the details you enter"
+      ]
+    },
+    "cleaner": {
+      "name": "AI Cleaner & Auditor",
+      "does": [
+        "Strips leftover Markdown such as ### headings and ** bold markers from pasted AI-generated text",
+        "Replaces stock transition phrases that AI tools tend to overuse",
+        "Flags factual claims, statistics and numbers in the text that have no citation",
+        "Exports a clean, formatted .docx"
+      ]
+    },
+    "resume": {
+      "name": "ATS Resume Forge",
+      "does": [
+        "Turns rough experience notes into a resume laid out for one page: single column, 0.6 inch margins, uppercase section headers",
+        "Rewrites bullets using the XYZ formula, using only numbers that appear in your notes, and flags bullets that still need a real number from you",
+        "Accepts an optional target job title or keywords, and suggests three keywords in the audit"
+      ]
+    }
+  },
+  "pricing": "One free preview run per tool, up to 6,000 characters, showing the opening of the result and the first audit item. A one-time $1.99 Single-Tool Pass unlocks the full result, the full audit, re-runs and the .docx download for that one tool, up to 35,000 characters per document, subject to fair use. Never describe the pass as unlimited.",
+  "privacy_statement": "FormatForge does not store your documents: your text is processed in memory to produce your result and is not saved by FormatForge. Processing uses OpenAI's API, so your text is sent to OpenAI for that purpose.",
+  "required_disclosure": "FormatForge is AI-assisted. Always review the result before you submit or send it.",
+  "refund_policy": null,
+  "does_not": [
+    "Does not guarantee any grade, job interview, or applicant tracking system outcome",
+    "Does not verify that a cited source exists or is accurate; it only flags and reformats what is in your text",
+    "Does not make any text undetectable by AI detectors and does not promise any result in plagiarism or AI-detection tools",
+    "Is not a substitute for reading the official style guide or your instructor's or employer's requirements",
+    "Is not a subscription: the pass is a one-time payment",
+    "Does not guarantee that a resume fits on one page",
+    "Does not check text against plagiarism or AI-detection tools"
+  ],
+  "style_fact_policy": "General facts about style guides (APA, MLA, Chicago, IEEE) may be stated only when the writer is certain they are correct. Otherwise tell the reader to check the official guide.",
+  "pass_note": "There are no accounts. A purchased pass is kept as a link in the browser's address bar, so the buyer should bookmark the page."
+}

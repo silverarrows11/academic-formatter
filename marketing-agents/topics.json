@@ -1,0 +1,272 @@
+[
+ {
+  "slug": "remove-chatgpt-markdown-from-text",
+  "engine": "cleaner",
+  "query": "remove ChatGPT markdown from text",
+  "intent": "Someone pasted AI output into Word and now sees ###, ** and stray symbols."
+ },
+ {
+  "slug": "paste-chatgpt-into-word-without-symbols",
+  "engine": "cleaner",
+  "query": "paste ChatGPT into Word without symbols",
+  "intent": "Wants a clean paste of AI-generated text into a Word document."
+ },
+ {
+  "slug": "overused-ai-transition-phrases",
+  "engine": "cleaner",
+  "query": "overused AI transition phrases to replace",
+  "intent": "Wants to spot and replace stock transitions that make text read as generic."
+ },
+ {
+  "slug": "check-missing-references-in-paper",
+  "engine": "academic",
+  "query": "check in-text citations match reference list",
+  "intent": "Wants to find citations that are missing from the reference list."
+ },
+ {
+  "slug": "mla-works-cited-formatting-mistakes",
+  "engine": "academic",
+  "query": "MLA works cited common formatting mistakes",
+  "intent": "Wants a checklist of common works cited mistakes."
+ },
+ {
+  "slug": "apa-reference-list-common-mistakes",
+  "engine": "academic",
+  "query": "APA reference list common mistakes",
+  "intent": "Wants to avoid common reference list errors."
+ },
+ {
+  "slug": "ieee-citation-format-basics",
+  "engine": "academic",
+  "query": "IEEE citation format basics",
+  "intent": "Needs a quick overview of IEEE numbered citations."
+ },
+ {
+  "slug": "one-page-resume-format-guide",
+  "engine": "resume",
+  "query": "one page resume format",
+  "intent": "Wants to fit a resume on one page with clean margins."
+ },
+ {
+  "slug": "xyz-formula-resume-bullets",
+  "engine": "resume",
+  "query": "XYZ formula resume bullet points",
+  "intent": "Wants to write bullets with the XYZ impact formula."
+ },
+ {
+  "slug": "turn-rough-notes-into-resume-bullets",
+  "engine": "resume",
+  "query": "turn rough job notes into resume bullets",
+  "intent": "Has messy notes about past jobs and needs structured bullets."
+ },
+ {
+  "slug": "harvard-style-resume-layout",
+  "engine": "resume",
+  "query": "Harvard style resume layout",
+  "intent": "Wants to understand the classic Harvard resume layout."
+ },
+ {
+  "slug": "apa-reference-list-alphabetical-order",
+  "engine": "academic",
+  "query": "APA reference list alphabetical order rules",
+  "intent": "Unsure how to order entries (same author, no author, numbers) in an APA reference list."
+ },
+ {
+  "slug": "apa-in-text-citation-format",
+  "engine": "academic",
+  "query": "APA in-text citation format",
+  "intent": "Needs a clear refresher on (Author, Year) and narrative citations, and et al. for several authors."
+ },
+ {
+  "slug": "apa-student-paper-title-page",
+  "engine": "academic",
+  "query": "APA 7 student paper title page",
+  "intent": "Wants to know what goes on an APA 7 student title page and how to lay it out in Word."
+ },
+ {
+  "slug": "mla-header-and-page-numbers-in-word",
+  "engine": "academic",
+  "query": "MLA header last name page number Word",
+  "intent": "Needs the MLA running header (last name and page number) set up correctly in Word."
+ },
+ {
+  "slug": "mla-heading-format-first-page",
+  "engine": "academic",
+  "query": "MLA heading format first page",
+  "intent": "Wants the four-line MLA heading and title layout explained."
+ },
+ {
+  "slug": "harvard-referencing-basics",
+  "engine": "academic",
+  "query": "Harvard referencing style basics",
+  "intent": "Student told to use Harvard style and unsure how in-text citations and the reference list work."
+ },
+ {
+  "slug": "chicago-bibliography-vs-footnotes",
+  "engine": "academic",
+  "query": "Chicago style bibliography vs footnotes",
+  "intent": "Confused between Chicago notes-bibliography and author-date, and what the bibliography page looks like."
+ },
+ {
+  "slug": "double-spacing-and-margins-for-academic-papers",
+  "engine": "academic",
+  "query": "double spacing and 1 inch margins in Word",
+  "intent": "Needs to set double line spacing and 1 inch margins correctly in Word for a paper."
+ },
+ {
+  "slug": "fix-citations-missing-from-reference-list",
+  "engine": "academic",
+  "query": "in-text citation not in reference list",
+  "intent": "Has cited sources in the text that never made it into the reference list, or the reverse."
+ },
+ {
+  "slug": "how-to-cite-a-website-apa",
+  "engine": "academic",
+  "query": "how to cite a website APA 7",
+  "intent": "Wants a step-by-step for a basic website reference and what to do when details are missing."
+ },
+ {
+  "slug": "et-al-rules-apa-mla",
+  "engine": "academic",
+  "query": "et al. rules APA MLA",
+  "intent": "Unsure when to shorten author lists with et al. in APA and MLA."
+ },
+ {
+  "slug": "reference-list-vs-bibliography",
+  "engine": "academic",
+  "query": "reference list vs bibliography difference",
+  "intent": "Wants the difference between a reference list, a bibliography and a works cited page."
+ },
+ {
+  "slug": "ieee-reference-list-numbering",
+  "engine": "academic",
+  "query": "IEEE reference list numbering order",
+  "intent": "Engineering student needs numbered IEEE references in order of first citation."
+ },
+ {
+  "slug": "block-quote-formatting-apa-mla",
+  "engine": "academic",
+  "query": "block quote formatting APA MLA",
+  "intent": "Needs the length threshold and indentation for block quotes in APA and MLA."
+ },
+ {
+  "slug": "page-numbers-in-word-for-papers",
+  "engine": "academic",
+  "query": "add page numbers top right in Word",
+  "intent": "Wants right-aligned page numbers in the header of a paper in Word."
+ },
+ {
+  "slug": "how-to-start-reference-list-on-new-page-word",
+  "engine": "academic",
+  "query": "start references on a new page Word",
+  "intent": "Wants the reference list on its own page without extra blank lines."
+ },
+ {
+  "slug": "remove-asterisks-from-chatgpt-text",
+  "engine": "cleaner",
+  "query": "remove asterisks from ChatGPT text",
+  "intent": "Pasted AI text shows ** and * symbols around words."
+ },
+ {
+  "slug": "remove-hashtags-from-chatgpt-headings",
+  "engine": "cleaner",
+  "query": "remove ### from ChatGPT text",
+  "intent": "Pasted AI text keeps # and ### heading marks."
+ },
+ {
+  "slug": "fix-chatgpt-bullet-points-in-word",
+  "engine": "cleaner",
+  "query": "fix ChatGPT bullet points in Word",
+  "intent": "Bullets copied from a chatbot show as dashes or odd symbols in Word."
+ },
+ {
+  "slug": "clean-up-ai-draft-before-submitting",
+  "engine": "cleaner",
+  "query": "clean up an AI draft before submitting",
+  "intent": "Wants a checklist for reading and fixing an AI-assisted draft: facts, citations, tone, formatting."
+ },
+ {
+  "slug": "find-claims-that-need-a-citation",
+  "engine": "cleaner",
+  "query": "find claims that need citations in my draft",
+  "intent": "Wants to spot statements and numbers in a draft that need a source."
+ },
+ {
+  "slug": "words-ai-text-overuses",
+  "engine": "cleaner",
+  "query": "words AI overuses in writing",
+  "intent": "Curious which stock phrases chatbots repeat and how to vary them."
+ },
+ {
+  "slug": "turn-chatgpt-answer-into-a-word-document",
+  "engine": "cleaner",
+  "query": "turn ChatGPT answer into a Word document",
+  "intent": "Wants to move a chatbot answer into a tidy Word document with real headings."
+ },
+ {
+  "slug": "check-ai-generated-statistics-before-you-use-them",
+  "engine": "cleaner",
+  "query": "check AI generated statistics sources",
+  "intent": "Wants a method for verifying numbers and sources that a chatbot supplied."
+ },
+ {
+  "slug": "resume-margins-and-font-size",
+  "engine": "resume",
+  "query": "resume margins and font size",
+  "intent": "Wants sensible margins and font sizes that keep a resume to one page."
+ },
+ {
+  "slug": "resume-section-order-for-students",
+  "engine": "resume",
+  "query": "resume section order for students",
+  "intent": "Student with little experience wants to know what order sections should go in."
+ },
+ {
+  "slug": "resume-bullet-action-verbs",
+  "engine": "resume",
+  "query": "resume bullet action verbs",
+  "intent": "Wants strong, honest verbs for describing work without exaggerating."
+ },
+ {
+  "slug": "how-to-add-numbers-to-resume-bullets-honestly",
+  "engine": "resume",
+  "query": "how to quantify resume bullets",
+  "intent": "Wants to add real figures to bullets and knows not to invent them."
+ },
+ {
+  "slug": "single-column-resume-for-online-applications",
+  "engine": "resume",
+  "query": "single column resume online applications",
+  "intent": "Wondering why single-column layouts are common for online application forms."
+ },
+ {
+  "slug": "resume-skills-section-examples",
+  "engine": "resume",
+  "query": "resume skills section examples",
+  "intent": "Wants a clear skills section that lists tools they actually use."
+ },
+ {
+  "slug": "linkedin-profile-to-resume",
+  "engine": "resume",
+  "query": "turn LinkedIn profile into resume",
+  "intent": "Has a LinkedIn profile and needs a one-page resume from it."
+ },
+ {
+  "slug": "resume-for-first-internship",
+  "engine": "resume",
+  "query": "resume for first internship no experience",
+  "intent": "First-time applicant with coursework and projects but no jobs."
+ },
+ {
+  "slug": "tailor-resume-to-a-job-description",
+  "engine": "resume",
+  "query": "tailor resume to job description",
+  "intent": "Wants to reuse the wording of a job description honestly without copying it."
+ },
+ {
+  "slug": "resume-file-format-docx-or-pdf",
+  "engine": "resume",
+  "query": "resume docx or pdf which to send",
+  "intent": "Wants to know when to send .docx or PDF and why employers ask for either."
+ }
+]
