@@ -426,6 +426,24 @@ textarea::placeholder, input::placeholder { color: #64748B !important; -webkit-t
 [data-testid="stExpander"] details { background: #0F172A; border: 1px solid #334155 !important; border-radius: 12px; }
 [data-testid="stVerticalBlockBorderWrapper"] { border-color: #334155 !important; border-radius: 14px !important; }
 
+/* Before / after example */
+.ex-section { margin: 36px 0 8px 0; }
+.ex-section h3 { text-align: center; font-size: 20px; font-weight: 800; margin: 0 0 4px 0; }
+.ex-sub { text-align: center; color: #94A3B8; font-size: 14px; margin: 0 0 18px 0; }
+.ex-grid { display: grid; grid-template-columns: 1fr 36px 1fr; gap: 12px; align-items: stretch; margin-bottom: 14px; }
+.ex-col { display: flex; flex-direction: column; min-width: 0; }
+.ex-label { font-size: 12px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; color: #94A3B8; margin-bottom: 6px; }
+.ex-box { flex: 1; border-radius: 12px; padding: 14px 16px; font-size: 14px; line-height: 1.55; overflow-wrap: anywhere; }
+.ex-in { background: #0F172A; border: 1px solid #334155; color: #CBD5E1; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 13px; }
+.ex-out { background: #FFFFFF; border: 1px solid #E2E8F0; color: #111827; font-family: "Times New Roman", Times, serif; font-size: 15px; }
+.ex-hang { padding-left: 36px; text-indent: -22px; }
+.ex-arrow { align-self: center; text-align: center; color: #10B981; font-size: 22px; font-weight: 700; }
+.ex-note { text-align: center; color: #94A3B8; font-size: 12.5px; margin: 4px 0 0 0; }
+@media (max-width: 640px) {
+    .ex-grid { grid-template-columns: 1fr; gap: 6px; }
+    .ex-arrow { transform: rotate(90deg); height: 24px; line-height: 24px; }
+}
+
 /* Tablet-width windows: columns get narrow, so reserve room for wrapped benefit lines */
 @media (min-width: 641px) and (max-width: 900px) {
     .tool-choice-card { min-height: 440px; }
@@ -529,7 +547,7 @@ if stripe_key:
 TOOL_CONFIG = {
     "academic": {
         "short_name": "Academic Paper Forge",
-        "headline": "Academic Paper & Citation Forge",
+        "headline": "Format your paper and check its citations",
         "tagline": "Fix broken in-text citations, alphabetize bibliographies, and export a formatted Word (.docx) file.",
         "benefits": [
             "✓ Auto hanging indents (.docx)",
@@ -558,11 +576,11 @@ TOOL_CONFIG = {
     },
     "humanizer": {
         "short_name": "AI Cleaner & Auditor",
-        "headline": "AI-Cliché Cleaner & Citation-Gap Auditor",
-        "tagline": "Strip copy-paste ChatGPT markdown clutter, replace robotic LLM transition words, and flag uncited claims.",
+        "headline": "Clean an AI draft and audit its citations",
+        "tagline": "Remove ChatGPT-style markdown, replace stock AI transition phrases, and flag claims that need a citation.",
         "benefits": [
             "✓ Strips ### & ** markdown clutter",
-            "✓ Replaces robotic AI transitions",
+            "✓ Replaces stock AI phrases",
             "✓ Flags uncited facts & statistics",
             "✓ Exports a clean .docx"
         ],
@@ -572,7 +590,7 @@ TOOL_CONFIG = {
             "Preparing clean Microsoft Word (.docx) manuscript..."
         ],
         "button_text": "Audit AI Clichés & Clean Document →",
-        "placeholder": "Paste your ChatGPT/Claude draft here to strip Markdown symbols (###, **), fix robotic AI clichés, and flag uncited claims...",
+        "placeholder": "Paste your ChatGPT/Claude draft here to strip Markdown symbols (###, **), replace stock AI phrases, and flag uncited claims...",
         "sample": (
             "### The Crucial Role of Renewable Energy in Modern Society\n\n"
             "In today's rapidly evolving landscape, it is crucial to delve into the multifaceted tapestry of renewable energy. "
@@ -585,7 +603,7 @@ TOOL_CONFIG = {
     },
     "resume": {
         "short_name": "ATS Resume Forge",
-        "headline": "Wall Street & Harvard Style ATS Resume",
+        "headline": "Build a clean, ATS-friendly one-page resume",
         "tagline": "Turn messy work history or LinkedIn bios into a clean, single-column .docx resume built for one page.",
         "benefits": [
             "✓ XYZ-formula bullet rewrites",
@@ -1038,7 +1056,7 @@ if st.session_state.current_view == "landing":
         '<div class="hero-card">'
         '<div class="hero-pill">3 document tools • $1.99 one-time pass per tool</div>'
         '<h1>Messy draft in.<br>Clean, formatted Word doc out.</h1>'
-        '<p>Whether you have an 11:59 PM paper with broken citations, a ChatGPT draft full of Markdown clutter, or a messy internship resume—turn it into a cleanly formatted .docx in 3 guided steps. Free preview first.</p>'
+        '<p>Turn a paper with inconsistent citations, a ChatGPT draft full of Markdown clutter, or a rough resume into a cleanly formatted .docx in three guided steps. Free preview first.</p>'
         '</div>',
         unsafe_allow_html=True
     )
@@ -1074,7 +1092,30 @@ if st.session_state.current_view == "landing":
                 st.session_state.studio_step = 2
                 st.rerun()
 
-    st.markdown('<h2 style="text-align: center; margin-top: 40px; margin-bottom: 6px; font-size: 24px; font-weight: 800;">Simple, Pay-As-You-Go Pricing</h2>', unsafe_allow_html=True)
+    st.markdown(
+        '<div class="ex-section">'
+        '<h3>See the kind of fix it makes</h3>'
+        '<p class="ex-sub">Two small examples. Your own text goes through the same steps in the free preview.</p>'
+        '<div class="ex-grid">'
+        '<div class="ex-col"><div class="ex-label">Pasted reference</div>'
+        '<div class="ex-box ex-in">smith, j. 2021 blue light and sleep. journal of sleep health 15(2) 104-112</div></div>'
+        '<div class="ex-arrow">→</div>'
+        '<div class="ex-col"><div class="ex-label">APA 7th reference</div>'
+        '<div class="ex-box ex-out ex-hang">Smith, J. (2021). Blue light and sleep. <i>Journal of Sleep Health, 15</i>(2), 104–112.</div></div>'
+        '</div>'
+        '<div class="ex-grid">'
+        '<div class="ex-col"><div class="ex-label">Copied from a chatbot</div>'
+        '<div class="ex-box ex-in">### Results<br>**Furthermore**, screen time is linked to later bedtimes.</div></div>'
+        '<div class="ex-arrow">→</div>'
+        '<div class="ex-col"><div class="ex-label">Cleaned text</div>'
+        '<div class="ex-box ex-out"><b>Results</b><br>In addition, screen time is linked to later bedtimes.</div></div>'
+        '</div>'
+        '<p class="ex-note">Illustrative examples. Results depend on your text, so always review them before you submit.</p>'
+        '</div>',
+        unsafe_allow_html=True
+    )
+
+    st.markdown('<h2 style="text-align: center; margin-top: 40px; margin-bottom: 6px; font-size: 24px; font-weight: 800;">Simple, one-time pricing</h2>', unsafe_allow_html=True)
     st.markdown('<p style="text-align: center; color: #94A3B8; font-size: 14px; margin-bottom: 20px;">Zero subscriptions. Re-runs & paragraph edits on your unlocked tool (fair use).</p>', unsafe_allow_html=True)
 
     st.markdown(
@@ -1084,7 +1125,7 @@ if st.session_state.current_view == "landing":
         '<div style="font-size: 32px; font-weight: 800; margin: 8px 0 16px 0;">$0 <span style="font-size: 14px; font-weight: 500; color: #94A3B8;">/ test any tool</span></div>'
         '<div style="font-size: 14px; line-height: 2.0; color: #CBD5E1;">'
         '<div class="benefit">✓ 1 free preview run per tool (up to 6,000 characters)</div>'
-        '<div class="benefit">✓ Live simulated Microsoft Word page preview</div>'
+        '<div class="benefit">✓ On-screen Word-style page preview</div>'
         '<div class="benefit">✓ See the opening of your result and the first audit finding</div>'
         '<div class="benefit">✓ Zero account signup required</div>'
         '</div></div>'
@@ -1107,7 +1148,9 @@ if st.session_state.current_view == "landing":
     with st.expander("Is the $1.99 pass a recurring subscription?"):
         st.write("No. It is a strict one-time payment of $1.99 via Stripe (Apple Pay, Google Pay, or card). You will never be billed again automatically.")
     with st.expander("What if I notice a typo or forgot a paragraph after paying $1.99?"):
-        st.write("You can re-run and edit the tool you unlocked as often as you reasonably need (fair use). Your unlocked pass is kept in your browser's address bar as a signed link, so a refresh will not lock you out. Bookmark the page to come back to it later.")
+        st.write("Yes. Re-runs and edits on the tool you unlocked are included, as often as you reasonably need (fair use).")
+    with st.expander("Can I get a PDF?"):
+        st.write("The download is a Word (.docx) file so you can keep editing it. For a PDF, open the file in Word, Google Docs or Pages and choose Save as PDF (or Download as PDF).")
     with st.expander("Are my documents stored?"):
         st.write("FormatForge does not store your documents: your text is processed in server memory and is not saved to a database or disk by us. To generate your result, the text is sent to OpenAI's API (see Privacy at the bottom of the page for details).")
     with st.expander("Can I trust the AI's output?"):
@@ -1417,7 +1460,7 @@ else:
                 st.session_state.studio_step = 2
                 st.rerun()
         with act_c2:
-            edit_hint = ("Need to add a forgotten paragraph? Click <b>Edit Draft</b>—re-runs are included with your pass."
+            edit_hint = ("Need to add a forgotten paragraph? Click <b>Edit Draft</b>. Re-runs are included with your pass."
                          if is_tool_pro else "Your free preview run is used. Unlock this tool to edit and re-run.")
             st.markdown(f'<div style="text-align:right; font-size:13px; color:#94A3B8;">{edit_hint}</div>', unsafe_allow_html=True)
 
@@ -1462,7 +1505,8 @@ else:
             )
 
         if is_tool_pro:
-            st.caption("Bookmark this page to keep your pass. There are no accounts, so the link is your key.")
+            st.caption("Bookmark this page to keep your pass. There are no accounts, so we cannot restore it if you lose the link.")
+            st.caption("Need a PDF? Open the .docx in Word, Google Docs or Pages and choose Save as PDF.")
         st.caption("AI-assisted result. Review it before you submit or send it. FormatForge reformats and flags what is in your text; it does not verify that sources exist.")
 
         # Simulated Microsoft Word (.docx) Sheet Preview
