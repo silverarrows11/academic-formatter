@@ -11,11 +11,29 @@ import stripe
 from docx import Document
 from docx.shared import Inches, Pt
 from docx.enum.text import WD_ALIGN_PARAGRAPH
+from docx.oxml import OxmlElement
+from docx.oxml.ns import qn
+
+def _make_favicon():
+    """Green rounded square with a dark F, drawn at start-up (Pillow ships with Streamlit)."""
+    try:
+        from PIL import Image, ImageDraw
+        size = 256
+        img = Image.new("RGBA", (size, size), (0, 0, 0, 0))
+        d = ImageDraw.Draw(img)
+        d.rounded_rectangle([0, 0, size - 1, size - 1], radius=56, fill=(16, 185, 129, 255))
+        dark = (5, 46, 22, 255)
+        d.rectangle([84, 64, 112, 192], fill=dark)
+        d.rectangle([84, 64, 184, 90], fill=dark)
+        d.rectangle([84, 112, 160, 136], fill=dark)
+        return img
+    except Exception:
+        return "⚡"
 
 # 1. Page Configuration
 st.set_page_config(
     page_title="FormatForge | Academic, AI Cleaner & ATS Resume Suite",
-    page_icon="⚡",
+    page_icon=_make_favicon(),
     layout="centered",
     initial_sidebar_state="collapsed"
 )
@@ -100,27 +118,32 @@ h1, h2, h3, h4 {
     border: 1px solid #475569;
 }
 
-/* Restrained Button Hierarchy: Only 1 Primary Green CTA per step */
-.stButton > button[kind="primary"] {
+/* Buttons: every button shares one size and shape; green is reserved for the single primary action */
+.stButton > button[kind="primary"], .stButton > button[kind="secondary"], .stDownloadButton > button {
+    min-height: 48px !important;
+    border-radius: 10px !important;
+    padding: 10px 18px !important;
+    font-weight: 700 !important;
+    font-size: 14px !important;
+    transition: all 0.15s ease !important;
+}
+.stButton > button p, .stDownloadButton > button p {
+    white-space: normal !important;
+    overflow: visible !important;
+    text-overflow: clip !important;
+    line-height: 1.25 !important;
+}
+.stButton > button[kind="primary"], .stDownloadButton > button[kind="primary"] {
     background: linear-gradient(180deg, #10B981 0%, #059669 100%) !important;
     color: #052E16 !important;
     border: 1px solid #34D399 !important;
-    border-radius: 12px !important;
-    padding: 14px 22px !important;
-    font-weight: 800 !important;
-    font-size: 15px !important;
-    transition: all 0.15s ease !important;
     box-shadow: 0 4px 16px rgba(16, 185, 129, 0.25) !important;
 }
-.stButton > button[kind="primary"]:hover {
+.stButton > button[kind="primary"]:hover, .stDownloadButton > button[kind="primary"]:hover {
     transform: translateY(-1px) !important;
     box-shadow: 0 6px 22px rgba(16, 185, 129, 0.38) !important;
 }
 .stButton > button[kind="secondary"] {
-    border-radius: 10px !important;
-    padding: 10px 16px !important;
-    font-weight: 700 !important;
-    font-size: 13.5px !important;
     border: 1px solid #334155 !important;
     background: #1E293B !important;
     color: #E2E8F0 !important;
@@ -147,7 +170,7 @@ h1, h2, h3, h4 {
     gap: 8px;
     font-size: 13px;
     font-weight: 600;
-    color: #64748B;
+    color: #8FA0B8;
 }
 .step-item.active {
     color: #FFFFFF;
@@ -185,7 +208,8 @@ h1, h2, h3, h4 {
     border: 1px solid #334155;
     border-radius: 14px;
     padding: 22px;
-    height: 100%;
+    min-height: 340px;
+    box-sizing: border-box;
     margin-bottom: 10px;
 }
 .tool-choice-title {
@@ -199,6 +223,7 @@ h1, h2, h3, h4 {
     color: #94A3B8;
     line-height: 1.5;
     margin-bottom: 14px;
+    min-height: 78px;
 }
 .tool-choice-list {
     font-size: 12.5px;
@@ -361,6 +386,62 @@ h1, h2, h3, h4 {
     text-align: center;
     margin-bottom: 18px;
 }
+
+/* Brand mark, tool icons, stepper connectors */
+.brand-mark {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 26px; height: 26px; border-radius: 7px; margin-right: 9px; vertical-align: middle;
+    background: linear-gradient(180deg, #10B981, #059669); color: #052E16; font-weight: 800; font-size: 15px;
+}
+.tool-card-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
+.tool-icon {
+    display: inline-flex; align-items: center; justify-content: center; width: 36px; height: 36px; border-radius: 10px;
+    background: rgba(16, 185, 129, 0.12); border: 1px solid rgba(52, 211, 153, 0.25); color: #34D399;
+}
+.tool-icon svg { width: 20px; height: 20px; }
+.tool-eyebrow { font-size: 11px; font-weight: 800; color: #34D399; text-transform: uppercase; letter-spacing: 0.04em; }
+.stepper-bar { flex-wrap: wrap; gap: 8px 0; margin-top: 10px; }
+.price-card-free .benefit, .price-card-pro .benefit { margin-bottom: 0; padding-top: 4px; padding-bottom: 4px; line-height: 1.5; }
+.step-sep { flex: 1; height: 1px; background: #334155; margin: 0 14px; min-width: 14px; }
+.badge-free, .badge-pro { white-space: nowrap; }
+.tool-choice-list { line-height: 1.6; }
+.benefit { padding-left: 1.25em; text-indent: -1.25em; margin-bottom: 4px; }
+
+/* One consistent dark look, whatever theme the visitor's browser or Streamlit would otherwise use */
+:root { color-scheme: dark; }
+.stApp, [data-testid="stAppViewContainer"] { background: #0B1220 !important; color: #E2E8F0; }
+[data-testid="stMarkdownContainer"], [data-testid="stWidgetLabel"] p, label { color: #E2E8F0; }
+[data-testid="stCaptionContainer"] { color: #94A3B8 !important; }
+[data-baseweb="textarea"], [data-baseweb="input"], [data-baseweb="select"] > div {
+    background: #0F172A !important; border-color: #334155 !important; border-radius: 10px !important;
+}
+textarea, input { color: #E2E8F0 !important; -webkit-text-fill-color: #E2E8F0 !important; }
+textarea::placeholder, input::placeholder { color: #64748B !important; -webkit-text-fill-color: #64748B !important; }
+[data-baseweb="textarea"]:focus-within, [data-baseweb="input"]:focus-within, [data-baseweb="select"] > div:focus-within {
+    border-color: #10B981 !important; box-shadow: 0 0 0 1px #10B981 !important;
+}
+[data-testid="stExpander"] details { background: #0F172A; border: 1px solid #334155 !important; border-radius: 12px; }
+[data-testid="stVerticalBlockBorderWrapper"] { border-color: #334155 !important; border-radius: 14px !important; }
+
+/* Tablet-width windows: columns get narrow, so reserve room for wrapped benefit lines */
+@media (min-width: 641px) and (max-width: 900px) {
+    .tool-choice-card { min-height: 440px; }
+}
+
+/* Small screens */
+@media (max-width: 640px) {
+    .hero-card { padding: 32px 20px; }
+    .hero-card h1 { font-size: 28px; }
+    .stepper-bar { padding: 12px 14px; gap: 8px 14px; }
+    .step-sep { display: none; }
+    .lbl-x { display: none; }
+    .step-item { font-size: 11.5px; gap: 6px; }
+    .step-num { width: 20px; height: 20px; }
+    .stepper-bar { justify-content: space-between; }
+    .word-page { padding: 24px 20px; }
+    .tool-choice-card { min-height: 0; }
+    .tool-choice-desc { min-height: 0; }
+}
 </style>
 """
 st.markdown(CUSTOM_CSS, unsafe_allow_html=True)
@@ -401,21 +482,20 @@ if stripe_key:
 TOOL_CONFIG = {
     "academic": {
         "short_name": "Academic Paper Forge",
-        "icon": "📚",
-        "headline": "📚 Academic Paper & Citation Forge",
+        "headline": "Academic Paper & Citation Forge",
         "tagline": "Fix broken in-text citations, alphabetize bibliographies, and export a formatted Word (.docx) file.",
         "benefits": [
-            "✓ Auto Hanging Indents (.docx)",
-            "✓ Missing Reference Cross-Check",
-            "✓ APA 7, MLA 9, Harvard, Chicago & IEEE",
-            "✓ Optional Auto Cover Page"
+            "✓ Auto hanging indents (.docx)",
+            "✓ Missing-reference cross-check",
+            "✓ APA, MLA, Harvard, Chicago, IEEE",
+            "✓ Optional cover page"
         ],
         "steps": [
             "Parsing body paragraphs & bibliography entries...",
             "Standardizing citation syntax & alphabetizing references...",
             "Cross-checking in-text citations & building .docx layout..."
         ],
-        "button_text": "✨ Format Paper & Run Citation Audit →",
+        "button_text": "Format Paper & Run Citation Audit →",
         "placeholder": "Paste your unformatted essay, rough draft, or messy bibliography right here...",
         "sample": (
             "The Impact of Screen Time on Teen Sleep Patterns\n\n"
@@ -431,21 +511,20 @@ TOOL_CONFIG = {
     },
     "humanizer": {
         "short_name": "AI Cleaner & Auditor",
-        "icon": "🛡️",
-        "headline": "🛡️ AI-Cliché Cleaner & Citation-Gap Auditor",
+        "headline": "AI-Cliché Cleaner & Citation-Gap Auditor",
         "tagline": "Strip copy-paste ChatGPT markdown clutter, replace robotic LLM transition words, and flag uncited claims.",
         "benefits": [
-            "✓ Strips ### & ** Markdown Clutter",
-            "✓ Replaces Robotic AI Transition Clichés",
-            "✓ Uncited Fact & Statistic Detector",
-            "✓ Exports Clean, Formatted .docx"
+            "✓ Strips ### & ** markdown clutter",
+            "✓ Replaces robotic AI transitions",
+            "✓ Flags uncited facts & statistics",
+            "✓ Exports a clean .docx"
         ],
         "steps": [
             "Scanning draft for Markdown symbols & repetitive LLM phrasing...",
             "Refining transitions & checking factual claims for missing citations...",
             "Preparing clean Microsoft Word (.docx) manuscript..."
         ],
-        "button_text": "🛡️ Audit AI Clichés & Clean Document →",
+        "button_text": "Audit AI Clichés & Clean Document →",
         "placeholder": "Paste your ChatGPT/Claude draft here to strip Markdown symbols (###, **), fix robotic AI clichés, and flag uncited claims...",
         "sample": (
             "### The Crucial Role of Renewable Energy in Modern Society\n\n"
@@ -459,21 +538,20 @@ TOOL_CONFIG = {
     },
     "resume": {
         "short_name": "ATS Resume Forge",
-        "icon": "💼",
-        "headline": "💼 Wall Street & Harvard 1-Page ATS Resume",
-        "tagline": "Transform messy work history or LinkedIn bios into a single-page, single-column .docx resume with a clean, ATS-friendly layout.",
+        "headline": "Wall Street & Harvard Style ATS Resume",
+        "tagline": "Turn messy work history or LinkedIn bios into a clean, single-column .docx resume built for one page.",
         "benefits": [
-            "✓ Wall Street XYZ Impact Bullet Rewrites",
-            "✓ Compact 0.6-inch Margins, Built for 1 Page",
-            "✓ Target Job Keyword Alignment",
-            "✓ Clean Single-Column .docx Export"
+            "✓ XYZ-formula bullet rewrites",
+            "✓ 0.6-inch margins for 1 page",
+            "✓ Target-keyword suggestions",
+            "✓ Single-column .docx export"
         ],
         "steps": [
             "Analyzing experience bullets & target role keywords...",
             "Rewriting bullet points into quantified XYZ impact statements...",
             "Compiling single-column 0.6-inch margin .docx layout..."
         ],
-        "button_text": "💼 Forge 1-Page Wall Street / Harvard Resume →",
+        "button_text": "Format Resume & Run ATS Audit →",
         "placeholder": "Paste your messy resume, LinkedIn bio, or rough work/project bullet points here...",
         "sample": (
             "Alex Rivera | alex.rivera@email.edu | (555) 234-5678 | New York, NY\n\n"
@@ -490,6 +568,19 @@ TOOL_CONFIG = {
         )
     }
 }
+
+_SVG = ('<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" '
+        'stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">{}</svg>')
+TOOL_ICONS = {
+    "academic": '<span class="tool-icon">' + _SVG.format('<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/>') + '</span>',
+    "humanizer": '<span class="tool-icon">' + _SVG.format('<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/>') + '</span>',
+    "resume": '<span class="tool-icon">' + _SVG.format('<rect x="2" y="7" width="20" height="14" rx="2" ry="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/>') + '</span>',
+}
+
+def tool_card_head(t_key):
+    tag = "Unlocked" if t_key in st.session_state.unlocked_tools else "Free preview"
+    return f'<div class="tool-card-head">{TOOL_ICONS[t_key]}<span class="tool-eyebrow">{tag}</span></div>'
+
 
 # 4. Session State Initialization (With Guided Stepper State)
 defaults = {
@@ -576,7 +667,7 @@ if "session_id" in st.query_params:
             # Drop user directly into Step 3 if they already have output, else Step 2
             st.session_state.studio_step = 3 if st.session_state.clean_text else 2
             tool_title = TOOL_CONFIG[paid_tool]["short_name"]
-            st.toast(f"⚡ {tool_title} Unlocked! Unlimited edits & .docx exports active.", icon="✅")
+            st.toast(f"{tool_title} unlocked. Unlimited edits and .docx exports are active.", icon="✅")
         else:
             st.warning("We could not confirm that payment yet. If you were charged, please refresh in a minute."
                        + (f" Still stuck? Email {CONTACT_EMAIL}." if CONTACT_EMAIL else ""))
@@ -682,6 +773,36 @@ def add_formatted_runs(paragraph, text, font_name="Times New Roman", font_size=1
         run.font.name = font_name
         run.font.size = Pt(font_size)
 
+def add_page_number(paragraph, font_name="Times New Roman", font_size=12):
+    """Insert a live PAGE field; Word and LibreOffice fill in the number."""
+    run = paragraph.add_run()
+    run.font.name = font_name
+    run.font.size = Pt(font_size)
+    begin = OxmlElement("w:fldChar")
+    begin.set(qn("w:fldCharType"), "begin")
+    instr = OxmlElement("w:instrText")
+    instr.set(qn("xml:space"), "preserve")
+    instr.text = " PAGE "
+    end = OxmlElement("w:fldChar")
+    end.set(qn("w:fldCharType"), "end")
+    for el in (begin, instr, end):
+        run._r.append(el)
+
+def add_bottom_border(paragraph):
+    """Thin rule under a resume section heading (inserted in schema order so Word opens it cleanly)."""
+    pPr = paragraph._p.get_or_add_pPr()
+    borders = OxmlElement("w:pBdr")
+    bottom = OxmlElement("w:bottom")
+    for key, val in (("w:val", "single"), ("w:sz", "6"), ("w:space", "1"), ("w:color", "000000")):
+        bottom.set(qn(key), val)
+    borders.append(bottom)
+    pPr.insert_element_before(borders, "w:shd", "w:tabs", "w:suppressAutoHyphens", "w:kinsoku", "w:wordWrap",
+                              "w:overflowPunct", "w:topLinePunct", "w:autoSpaceDE", "w:autoSpaceDN", "w:bidi",
+                              "w:adjustRightInd", "w:snapToGrid", "w:spacing", "w:ind", "w:contextualSpacing",
+                              "w:mirrorIndents", "w:suppressOverlap", "w:jc", "w:textDirection", "w:textAlignment",
+                              "w:textboxTightWrap", "w:outlineLvl", "w:divId", "w:cnfStyle", "w:rPr", "w:sectPr",
+                              "w:pPrChange")
+
 def create_smart_docx(content, tool_mode, style_name="APA 7th Edition", title_info=None):
     doc = Document()
     margin_size = Inches(0.6) if tool_mode == "resume" else Inches(1.0)
@@ -691,14 +812,16 @@ def create_smart_docx(content, tool_mode, style_name="APA 7th Edition", title_in
         section.left_margin = margin_size
         section.right_margin = margin_size
         
-        if tool_mode == "academic" and title_info and title_info.get("author"):
-            header = section.header
-            hp = header.paragraphs[0]
+        if tool_mode == "academic" and "IEEE" not in style_name:
+            # Page number top right on every page; MLA also puts the author's last name before it.
+            hp = section.header.paragraphs[0]
             hp.alignment = WD_ALIGN_PARAGRAPH.RIGHT
-            last_name = title_info["author"].strip().split()[-1]
-            hrun = hp.add_run(f"{last_name}")
-            hrun.font.name = "Times New Roman"
-            hrun.font.size = Pt(12)
+            author = ((title_info or {}).get("author") or "").strip()
+            if "MLA" in style_name and author:
+                lead = hp.add_run(f"{author.split()[-1]} ")
+                lead.font.name = "Times New Roman"
+                lead.font.size = Pt(12)
+            add_page_number(hp)
 
     if tool_mode == "academic" and title_info and title_info.get("include") and title_info.get("title"):
         for _ in range(3):
@@ -751,6 +874,7 @@ def create_smart_docx(content, tool_mode, style_name="APA 7th Edition", title_in
                 p.paragraph_format.space_before = Pt(8)
                 p.paragraph_format.space_after = Pt(2)
                 run = p.add_run(clean_line.rstrip(':').upper())
+                add_bottom_border(p)
                 run.bold = True
                 run.font.name = "Times New Roman"
                 run.font.size = Pt(11)
@@ -780,6 +904,8 @@ def create_smart_docx(content, tool_mode, style_name="APA 7th Edition", title_in
 
             if clean_header in ref_headers:
                 in_references = True
+                if not is_ieee:
+                    p.paragraph_format.page_break_before = True  # reference list starts on its own page
                 p.alignment = WD_ALIGN_PARAGRAPH.CENTER
                 run = p.add_run(re.sub(r'[*_#]', '', para_text).strip())
                 run.bold = True
@@ -847,11 +973,11 @@ def terms_modal():
 # ==============================================================================
 if st.session_state.current_view == "landing":
     unlocked_count = len(st.session_state.unlocked_tools)
-    status_badge = f'<span class="badge badge-pro">⚡ {unlocked_count} Tool(s) Active</span>' if unlocked_count > 0 else '<span class="badge badge-free">Free Preview Available</span>'
+    status_badge = f'<span class="badge badge-pro">{unlocked_count} Unlocked</span>' if unlocked_count > 0 else '<span class="badge badge-free">Free Preview Available</span>'
     
     nav_col1, nav_col2 = st.columns([3, 1.2], vertical_alignment="center")
     with nav_col1:
-        st.markdown(f'<div style="display:flex; align-items:center; gap:12px;"><span style="font-weight:800; font-size:22px; letter-spacing:-0.03em;">✦ FormatForge</span> {status_badge}</div>', unsafe_allow_html=True)
+        st.markdown(f'<div style="display:flex; align-items:center; gap:12px;"><span style="font-weight:800; font-size:22px; letter-spacing:-0.03em;"><span class="brand-mark">F</span>FormatForge</span> {status_badge}</div>', unsafe_allow_html=True)
     with nav_col2:
         if st.button("Open Studio →", use_container_width=True):
             st.session_state.current_view = "editor"
@@ -862,7 +988,7 @@ if st.session_state.current_view == "landing":
 
     st.markdown(
         '<div class="hero-card">'
-        '<div class="hero-pill">⚡ 3 Specialized Document Engines • $1.99 Per Tool Pass</div>'
+        '<div class="hero-pill">3 document tools • $1.99 one-time pass per tool</div>'
         '<h1>Messy draft in.<br>Clean, formatted Word doc out.</h1>'
         '<p>Whether you have an 11:59 PM paper with broken citations, a ChatGPT draft full of Markdown clutter, or a messy internship resume—turn it into a cleanly formatted .docx in 3 guided steps. Free preview first.</p>'
         '</div>',
@@ -872,7 +998,7 @@ if st.session_state.current_view == "landing":
     # Single Primary CTA on Landing Hero (Eliminates multiple green buttons)
     cta_c1, cta_c2, cta_c3 = st.columns([0.8, 2.4, 0.8])
     with cta_c2:
-        if st.button("⚡ Start Guided Formatting Studio — Free Preview", type="primary", use_container_width=True):
+        if st.button("Start free preview →", type="primary", use_container_width=True):
             st.session_state.current_view = "editor"
             st.session_state.studio_step = 1
             st.rerun()
@@ -883,17 +1009,18 @@ if st.session_state.current_view == "landing":
     c1, c2, c3 = st.columns(3)
     for col, t_key in zip([c1, c2, c3], ["academic", "humanizer", "resume"]):
         info = TOOL_CONFIG[t_key]
-        benefits_str = "<br>".join(info["benefits"])
+        benefits_str = "".join(f'<div class="benefit">{b}</div>' for b in info["benefits"])
         with col:
             st.markdown(
                 '<div class="tool-choice-card">'
-                f'<div class="tool-choice-title">{info["icon"]} {info["short_name"]}</div>'
+                f'{tool_card_head(t_key)}'
+                f'<div class="tool-choice-title">{info["short_name"]}</div>'
                 f'<div class="tool-choice-desc">{info["tagline"]}</div>'
                 f'<div class="tool-choice-list">{benefits_str}</div>'
                 '</div>',
                 unsafe_allow_html=True
             )
-            if st.button(f"Select {info['short_name']} →", key=f"land_{t_key}", use_container_width=True):
+            if st.button("Choose this tool →", key=f"land_{t_key}", use_container_width=True):
                 st.session_state.active_tool = t_key
                 st.session_state.current_view = "editor"
                 st.session_state.studio_step = 2
@@ -908,10 +1035,10 @@ if st.session_state.current_view == "landing":
         '<div style="font-weight: 700; font-size: 13px; color: #94A3B8; text-transform: uppercase;">Free Preview (All 3 Tools)</div>'
         '<div style="font-size: 32px; font-weight: 800; margin: 8px 0 16px 0;">$0 <span style="font-size: 14px; font-weight: 500; color: #94A3B8;">/ test any tool</span></div>'
         '<div style="font-size: 14px; line-height: 2.0; color: #CBD5E1;">'
-        '✓ 1 free preview run per tool (up to 6,000 characters)<br>'
-        '✓ Live simulated Microsoft Word page preview<br>'
-        '✓ See the opening of your result and the first audit finding<br>'
-        '✓ Zero account signup required'
+        '<div class="benefit">✓ 1 free preview run per tool (up to 6,000 characters)</div>'
+        '<div class="benefit">✓ Live simulated Microsoft Word page preview</div>'
+        '<div class="benefit">✓ See the opening of your result and the first audit finding</div>'
+        '<div class="benefit">✓ Zero account signup required</div>'
         '</div></div>'
         '<div class="price-card-pro">'
         '<div style="display:flex; justify-content:space-between; align-items:center;">'
@@ -920,10 +1047,10 @@ if st.session_state.current_view == "landing":
         '</div>'
         '<div style="font-size: 32px; font-weight: 800; margin: 8px 0 16px 0;">$1.99 <span style="font-size: 14px; font-weight: 500; color: #94A3B8;">/ per tool pass</span></div>'
         '<div style="font-size: 14px; line-height: 2.0; color: #E2E8F0;">'
-        '✓ <b>Unlimited re-runs & edits</b> on that tool (forgot a paragraph? Run it again free)<br>'
-        '✓ Up to <b>35,000 characters</b> per document<br>'
-        '✓ <b>Word (.docx) download</b> & one-click copy<br>'
-        '✓ Full Citation, AI-Cliché, or ATS Audit unlocked'
+        '<div class="benefit">✓ <b>Unlimited re-runs & edits</b> on that tool</div>'
+        '<div class="benefit">✓ Up to <b>35,000 characters</b> per document</div>'
+        '<div class="benefit">✓ <b>Word (.docx) download</b> & one-click copy</div>'
+        '<div class="benefit">✓ Full Citation, AI-Cliché, or ATS Audit unlocked</div>'
         '</div></div></div>',
         unsafe_allow_html=True
     )
@@ -953,10 +1080,13 @@ else:
     step = st.session_state.studio_step
 
     status_badge = (
-        f'<span class="badge badge-pro">⚡ {tool_info["short_name"]}: UNLOCKED</span>'
+        f'<span class="badge badge-pro">{tool_info["short_name"]}: Unlocked</span>'
         if is_tool_pro else
-        f'<span class="badge badge-free">🔒 {tool_info["short_name"]}: FREE PREVIEW</span>'
+        f'<span class="badge badge-free">{tool_info["short_name"]}: Free preview</span>'
     )
+
+    if step == 1:
+        status_badge = ""  # no tool chosen yet, so no tool badge
 
     # Top Header Bar
     nav_c1, nav_c2, nav_c3 = st.columns([1.1, 2.1, 1.8], vertical_alignment="center")
@@ -965,7 +1095,7 @@ else:
             st.session_state.current_view = "landing"
             st.rerun()
     with nav_c2:
-        st.markdown('<div style="text-align:center; font-weight:800; font-size:20px; letter-spacing:-0.03em;">✦ FormatForge Studio</div>', unsafe_allow_html=True)
+        st.markdown('<div style="text-align:center; font-weight:800; font-size:20px; letter-spacing:-0.03em;"><span class="brand-mark">F</span>FormatForge Studio</div>', unsafe_allow_html=True)
     with nav_c3:
         st.markdown(f'<div style="text-align:right;">{status_badge}</div>', unsafe_allow_html=True)
 
@@ -976,11 +1106,11 @@ else:
 
     st.markdown(
         '<div class="stepper-bar">'
-        f'<div class="step-item {s1_cls}"><span class="step-num">{"✓" if step > 1 else "1"}</span> 1. Choose Engine</div>'
-        '<div style="color:#334155;">────</div>'
-        f'<div class="step-item {s2_cls}"><span class="step-num">{"✓" if step > 2 else "2"}</span> 2. Add Draft & Format</div>'
-        '<div style="color:#334155;">────</div>'
-        f'<div class="step-item {s3_cls}"><span class="step-num">3</span> 3. Review & Export .docx</div>'
+        f'<div class="step-item {s1_cls}"><span class="step-num">{"✓" if step > 1 else "1"}</span><span>Choose<span class="lbl-x"> tool</span></span></div>'
+        '<div class="step-sep"></div>'
+        f'<div class="step-item {s2_cls}"><span class="step-num">{"✓" if step > 2 else "2"}</span><span>Add<span class="lbl-x"> your</span> draft</span></div>'
+        '<div class="step-sep"></div>'
+        f'<div class="step-item {s3_cls}"><span class="step-num">3</span><span>Review<span class="lbl-x"> & export</span></span></div>'
         '</div>',
         unsafe_allow_html=True
     )
@@ -989,26 +1119,24 @@ else:
     # STEP 1: SELECT YOUR SERVICE ENGINE
     # --------------------------------------------------------------------------
     if step == 1:
-        st.markdown("<h3 style='text-align:center; margin-bottom:4px;'>Which document engine do you need today?</h3>", unsafe_allow_html=True)
-        st.markdown("<p style='text-align:center; color:#94A3B8; font-size:14px; margin-bottom:20px;'>Select a specialized engine below to see its settings and load your draft.</p>", unsafe_allow_html=True)
+        st.markdown("<h3 style='text-align:center; margin-bottom:4px;'>Which tool do you need today?</h3>", unsafe_allow_html=True)
+        st.markdown("<p style='text-align:center; color:#94A3B8; font-size:14px; margin-bottom:20px;'>Pick a tool to get started. You can switch at any time.</p>", unsafe_allow_html=True)
 
         col1, col2, col3 = st.columns(3)
         for col, t_key in zip([col1, col2, col3], ["academic", "humanizer", "resume"]):
             info = TOOL_CONFIG[t_key]
-            unlocked_tag = "⚡ UNLOCKED" if t_key in st.session_state.unlocked_tools else "$1.99 Pass / Free Preview"
-            benefits_html = "<br>".join(info["benefits"])
+            benefits_html = "".join(f'<div class="benefit">{b}</div>' for b in info["benefits"])
             with col:
                 st.markdown(
                     '<div class="tool-choice-card">'
-                    f'<div style="font-size:11px; font-weight:800; color:#34D399; text-transform:uppercase; margin-bottom:6px;">{unlocked_tag}</div>'
-                    f'<div class="tool-choice-title">{info["icon"]} {info["short_name"]}</div>'
+                    f'{tool_card_head(t_key)}'
+                    f'<div class="tool-choice-title">{info["short_name"]}</div>'
                     f'<div class="tool-choice-desc">{info["tagline"]}</div>'
                     f'<div class="tool-choice-list">{benefits_html}</div>'
                     '</div>',
                     unsafe_allow_html=True
                 )
-                btn_kind = "primary" if st.session_state.active_tool == t_key else "secondary"
-                if st.button(f"Continue with {info['short_name']} →", key=f"s1_{t_key}", type=btn_kind, use_container_width=True):
+                if st.button("Choose this tool →", key=f"s1_{t_key}", use_container_width=True):
                     if st.session_state.active_tool != t_key:
                         st.session_state.active_tool = t_key
                         st.session_state.clean_text = None
@@ -1035,7 +1163,7 @@ else:
                 unsafe_allow_html=True
             )
         with top_b2:
-            if st.button("🔄 Switch Engine", use_container_width=True):
+            if st.button("Switch tool", use_container_width=True):
                 st.session_state.studio_step = 1
                 st.rerun()
 
@@ -1050,11 +1178,11 @@ else:
                     else:
                         selected_style = st.selectbox(
                             "Formatting Rubric", 
-                            ["APA 7th Edition (Free Preview)", "🔒 MLA 9th Edition ($1.99 Pass)", "🔒 Harvard Style ($1.99 Pass)", "🔒 Chicago 17th Edition ($1.99 Pass)", "🔒 IEEE ($1.99 Pass)"],
+                            ["APA 7th Edition (Free Preview)", "MLA 9th Edition (pass required)", "Harvard Style (pass required)", "Chicago 17th Edition (pass required)", "IEEE (pass required)"],
                             index=0
                         )
-                        if "🔒" in selected_style:
-                            st.info("💡 MLA, Harvard, Chicago & IEEE unlock in Step 3 with the $1.99 Pass. Running preview in APA 7th.")
+                        if "pass required" in selected_style:
+                            st.info("MLA, Harvard, Chicago and IEEE need the $1.99 pass. The free preview runs in APA 7th.")
                         selected_style = "APA 7th Edition"
                     st.session_state.selected_style = selected_style
                 elif active_tool == "humanizer":
@@ -1071,7 +1199,7 @@ else:
                     st.session_state.selected_style = resume_style
 
             with ctrl_col2:
-                if st.button("🧪 Load Sample Text", use_container_width=True):
+                if st.button("Load sample text", use_container_width=True):
                     st.session_state.input_text = tool_info["sample"]
                     st.rerun()
 
@@ -1086,14 +1214,14 @@ else:
 
             if active_tool == "resume":
                 st.session_state.job_target = st.text_input(
-                    "🎯 Target Job Title or Paste Job Description Keywords (Optional)",
+                    "Target job title or job-description keywords (optional)",
                     value=st.session_state.job_target,
                     placeholder="e.g., Investment Banking Summer Analyst / Data Science Intern (Python, SQL, Financial Modeling)"
                 )
 
             opt_col1, opt_col2 = st.columns(2)
             with opt_col1:
-                with st.expander("📎 Or Upload a .docx / .txt File"):
+                with st.expander("Or upload a .docx / .txt file"):
                     uploaded_doc = st.file_uploader("Upload file", type=["docx", "txt"], label_visibility="collapsed")
                     if uploaded_doc is not None and uploaded_doc.name != st.session_state.last_uploaded_file:
                         st.session_state.input_text = extract_text_from_file(uploaded_doc)
@@ -1101,7 +1229,7 @@ else:
                         st.rerun()
             with opt_col2:
                 if active_tool == "academic":
-                    with st.expander("📄 Add Auto Cover Page (Optional)"):
+                    with st.expander("Add a cover page (optional)"):
                         st.session_state["tp_title"] = st.text_input("Paper Title", value=st.session_state.get("tp_title", ""), placeholder="e.g., The Impact of Screen Time on Sleep")
                         st.session_state["tp_author"] = st.text_input("Your Full Name", value=st.session_state.get("tp_author", ""), placeholder="e.g., Alex Rivera")
                         st.session_state["tp_inst"] = st.text_input("University / College", value=st.session_state.get("tp_inst", ""), placeholder="e.g., State University")
@@ -1116,27 +1244,27 @@ else:
             meta_col1, meta_col2 = st.columns(2)
             with meta_col1:
                 if not is_tool_pro:
-                    st.caption(f"📏 **{word_count} words** ({char_len:,}/{FREE_INPUT_LIMIT:,} free preview chars) • Free previews left: **{max(0, 1 - tool_free_used)}**")
+                    st.caption(f"**{word_count} words** ({char_len:,}/{FREE_INPUT_LIMIT:,} free preview chars) • Free previews left: **{max(0, 1 - tool_free_used)}**")
                 else:
-                    st.caption(f"📏 **{word_count} words** ({char_len:,}/{PRO_MAX_CHARS:,} chars) • **⚡ Unlimited Session Edits Active**")
+                    st.caption(f"**{word_count} words** ({char_len:,}/{PRO_MAX_CHARS:,} chars) • **Unlimited edits active**")
             with meta_col2:
-                st.markdown('<div style="text-align:right; font-size:12px; color:#94A3B8; font-weight:600;">🔒 Not stored by FormatForge</div>', unsafe_allow_html=True)
+                st.markdown('<div style="text-align:right; font-size:12px; color:#94A3B8; font-weight:600;">Not stored by FormatForge</div>', unsafe_allow_html=True)
 
             # THE ONLY GREEN BUTTON ON STEP 2
             if st.button(tool_info["button_text"], type="primary", use_container_width=True):
                 if not user_text.strip():
-                    st.warning("Paste your text above or click '🧪 Load Sample Text' first!")
+                    st.warning("Paste your text above or click 'Load sample text' first!")
                 elif not is_tool_pro and tool_free_used >= 1:
                     st.error(f"You've used your free preview for {tool_info['short_name']}!")
-                    st.markdown(f'<a href="{stripe_tool_url}" target="_blank" class="cta-btn">⚡ Unlock Unlimited {tool_info["short_name"]} Pass ($1.99) →</a>', unsafe_allow_html=True)
+                    st.markdown(f'<a href="{stripe_tool_url}" target="_blank" class="cta-btn">Unlock {tool_info["short_name"]} — $1.99 →</a>', unsafe_allow_html=True)
                 elif not is_tool_pro and char_len > FREE_INPUT_LIMIT:
                     st.error(f"Your draft is {char_len:,} characters. The free preview accepts up to {FREE_INPUT_LIMIT:,}. Unlock the $1.99 Pass to format up to {PRO_MAX_CHARS:,} characters.")
-                    st.markdown(f'<a href="{stripe_tool_url}" target="_blank" class="cta-btn">⚡ Unlock Full Length + .docx Export ($1.99) →</a>', unsafe_allow_html=True)
+                    st.markdown(f'<a href="{stripe_tool_url}" target="_blank" class="cta-btn">Unlock full length + .docx export — $1.99 →</a>', unsafe_allow_html=True)
                 elif is_tool_pro and char_len > PRO_MAX_CHARS:
                     st.error(f"Your draft is {char_len:,} characters. The maximum per document is {PRO_MAX_CHARS:,}. Please split it into two parts.")
                 else:
                     with st.status(f"Running {tool_info['short_name']}...", expanded=True) as status_box:
-                        st.write(f"⚙️ {tool_info['steps'][0]}")
+                        st.write(f"{tool_info['steps'][0]}")
                         if active_tool == "academic":
                             system_message = (
                                 f"You are an elite university academic copyeditor. Reformat the user's input strictly according to {st.session_state.selected_style} standards.\n"
@@ -1170,6 +1298,7 @@ else:
                                 f"You are an elite Wall Street & Tech ATS Resume writer. Reformat the user's input into a strict 1-page Harvard/Wall Street ATS Resume ({target_ctx}).\n"
                                 "- First line: Candidate Name. Second line: Contact info separated by ' | '.\n"
                                 "- Use clean uppercase section headers: EDUCATION, EXPERIENCE, PROJECTS, SKILLS.\n"
+                                "- Put each role or project heading line (title, organization, dates) in **double asterisks** so it prints in bold.\n"
                                 "- Rewrite weak experience bullets using the XYZ impact formula (Accomplished [X] as measured by [Y], by doing [Z]) with strong action verbs.\n"
                                 "- Never invent numbers, employers, titles, dates, degrees, or achievements. Use only metrics that appear in the input. If a bullet has no metric, keep it factual without one and list it in the audit as needing a real number from the candidate.\n\n"
                                 "Output Format:\n"
@@ -1181,7 +1310,7 @@ else:
                             )
 
                         try:
-                            st.write(f"🔍 {tool_info['steps'][1]}")
+                            st.write(f"{tool_info['steps'][1]}")
                             client = openai.OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
                             response = client.chat.completions.create(
                                 model="gpt-4o-mini",
@@ -1191,7 +1320,7 @@ else:
                                 ],
                                 timeout=60.0
                             )
-                            st.write(f"📄 {tool_info['steps'][2]}")
+                            st.write(f"{tool_info['steps'][2]}")
                             output_content = response.choices[0].message.content
                             
                             if DELIMITER in output_content:
@@ -1207,7 +1336,7 @@ else:
                             if not is_tool_pro:
                                 st.session_state.free_uses[active_tool] = tool_free_used + 1
                             
-                            status_box.update(label="✅ Complete! Opening Deliverable...", state="complete", expanded=False)
+                            status_box.update(label="Done. Opening your result...", state="complete", expanded=False)
                             st.session_state.studio_step = 3
                             st.rerun()
                             
@@ -1243,12 +1372,12 @@ else:
         audit_status_html = (
             '<span style="color:#34D399;">✓ Full Audit Unlocked</span>'
             if is_tool_pro else
-            '<span style="color:#FBBF24;">🔒 First finding shown</span>'
+            '<span style="color:#FBBF24;">First finding shown</span>'
         )
         st.markdown(
             '<div class="summary-strip">'
             f'<div class="summary-box"><div class="summary-label">Words (in → out)</div><div class="summary-val">{st.session_state.run_in_words:,} → {out_words:,}</div></div>'
-            f'<div class="summary-box"><div class="summary-label">Active Engine</div><div class="summary-val">{tool_info["short_name"]}</div></div>'
+            f'<div class="summary-box"><div class="summary-label">Active tool</div><div class="summary-val">{tool_info["short_name"]}</div></div>'
             f'<div class="summary-box"><div class="summary-label">Diagnostic Audit</div><div class="summary-val">{audit_status_html}</div></div>'
             '</div>',
             unsafe_allow_html=True
@@ -1268,7 +1397,7 @@ else:
         if is_tool_pro:
             docx_file = create_smart_docx(st.session_state.clean_text, active_tool, st.session_state.selected_style, title_data)
             st.download_button(
-                label="📥 Download Microsoft Word (.docx)",
+                label="Download Word (.docx)",
                 data=docx_file,
                 file_name=f"FormatForge_{active_tool.capitalize()}.docx",
                 mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
@@ -1277,7 +1406,7 @@ else:
             )
 
         if is_tool_pro:
-            st.caption("🔖 Bookmark this page to keep your pass. There are no accounts, so the link is your key.")
+            st.caption("Bookmark this page to keep your pass. There are no accounts, so the link is your key.")
         st.caption("AI-assisted result. Review it before you submit or send it. FormatForge reformats and flags what is in your text; it does not verify that sources exist.")
 
         # Simulated Microsoft Word (.docx) Sheet Preview
@@ -1290,8 +1419,8 @@ else:
         st.markdown(
             '<div class="word-preview-wrapper">'
             '<div class="word-toolbar">'
-            '<span>📄 MICROSOFT WORD (.DOCX) PRINT LAYOUT PREVIEW</span>'
-            f'<span>{st.session_state.selected_style} • Rubric Margins</span>'
+            '<span>Word (.docx) preview</span>'
+            f'<span>{st.session_state.selected_style}</span>'
             '</div>'
             f'<div class="word-page">{preview_html}</div>'
             '</div>',
@@ -1306,19 +1435,19 @@ else:
                 '<div class="lock-strip">'
                 f'<div style="font-size:16px; color:#FFFFFF; margin-bottom:4px;">{more_line}</div>'
                 '<div style="font-size:13px; color:#CBD5E1; margin-bottom:16px;">Unlock this tool to read the full result, see the full audit, and download the Word (.docx) file.</div>'
-                f'<a href="{stripe_tool_url}" target="_blank" class="cta-btn">⚡ Unlock {tool_info["short_name"]} — $1.99 one-time</a>'
-                f'<div style="font-size:11px; color:#94A3B8; margin-top:10px;">🔒 {REFUND_NOTE}</div>'
+                f'<a href="{stripe_tool_url}" target="_blank" class="cta-btn">Unlock full result — $1.99</a>'
+                f'<div style="font-size:11px; color:#94A3B8; margin-top:10px;">{REFUND_NOTE}</div>'
                 '</div>',
                 unsafe_allow_html=True
             )
 
         if is_tool_pro:
-            with st.expander("📋 Copy Raw Text (One-Click Clipboard)"):
+            with st.expander("Copy text"):
                 st.code(st.session_state.clean_text, language=None, wrap_lines=True)
 
         # Diagnostic & Rubric Audit Section
         if st.session_state.editorial_notes:
-            st.markdown("#### 🔍 Diagnostic & Rubric Audit")
+            st.markdown("#### Audit findings")
             if is_tool_pro:
                 with st.container(border=True):
                     st.markdown(st.session_state.editorial_notes)
@@ -1336,7 +1465,7 @@ else:
                     '<div class="blur-container">'
                     f'<div style="font-weight:800; color:#FBBF24; font-size:14px; margin-bottom:6px;">Audit preview: first of {total} item{"s" if total != 1 else ""}</div>'
                     f'<div style="font-size:14px; color:#FFFFFF; font-weight:600; margin-bottom:12px;">{first_finding}</div>'
-                    f'<div style="font-size:13px; color:#94A3B8;">🔒 {lock_line}</div>'
+                    f'<div style="font-size:13px; color:#94A3B8;">{lock_line}</div>'
                     '</div>',
                     unsafe_allow_html=True
                 )
@@ -1348,7 +1477,7 @@ st.markdown("<div style='margin-top: 48px; border-top: 1px solid rgba(148, 163, 
 
 foot_col1, foot_col2, foot_col3 = st.columns([6, 1, 1])
 with foot_col1:
-    st.markdown(f"<div style='font-size: 13px; color: #64748B; padding-top: 8px;'>{FOOTER_TEXT}</div>", unsafe_allow_html=True)
+    st.markdown(f"<div style='font-size: 13px; color: #94A3B8; padding-top: 8px;'>{FOOTER_TEXT}</div>", unsafe_allow_html=True)
 with foot_col2:
     if st.button("Privacy", type="tertiary", use_container_width=True):
         privacy_modal()
