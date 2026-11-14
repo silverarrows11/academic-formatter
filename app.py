@@ -4,6 +4,9 @@ import os
 import sys
 import hmac
 import hashlib
+import time
+import threading
+from collections import deque
 import html
 import streamlit as st
 import openai
@@ -451,6 +454,50 @@ FREE_INPUT_LIMIT = 6000    # characters a free user may submit for their one fre
 FREE_TEASER_CHARS = 900    # how much of the formatted result free users see
 PRO_MAX_CHARS = 35000
 
+# Speed limits. They protect the OpenAI bill from scripts and heavy link-sharing; normal use never gets near them.
+# Counts live in the server's memory, so they reset whenever the app restarts. Override with Railway variables if needed.
+def _int_env(name, default):
+    try:
+        value = int(os.getenv(name, "").strip())
+        return value if value > 0 else default
+    except ValueError:
+        return default
+
+RATE_WINDOW_SECONDS = 3600
+SESSION_RUNS_PER_HOUR = _int_env("RATE_SESSION_PER_HOUR", 30)       # one visitor's browser session
+SERVER_PAID_RUNS_PER_HOUR = _int_env("RATE_SERVER_PAID_PER_HOUR", 400)  # all paying visitors together
+SERVER_FREE_RUNS_PER_HOUR = _int_env("RATE_SERVER_FREE_PER_HOUR", 150)  # all free previews together
+
+
+class BusyError(Exception):
+    """Raised when a run is refused by the speed limit; the message is safe to show to the visitor."""
+
+
+@st.cache_resource
+def _usage_log():
+    return {"lock": threading.Lock(), "free": deque(), "paid": deque()}
+
+
+def reserve_run(log, session_times, is_paid, now=None):
+    """Record one run if allowed and return None; otherwise return a friendly message and record nothing."""
+    now = time.time() if now is None else now
+    cutoff = now - RATE_WINDOW_SECONDS
+    with log["lock"]:
+        while session_times and session_times[0] < cutoff:
+            session_times.pop(0)
+        bucket = log["paid" if is_paid else "free"]
+        while bucket and bucket[0] < cutoff:
+            bucket.popleft()
+        if len(session_times) >= SESSION_RUNS_PER_HOUR:
+            wait = int((session_times[0] + RATE_WINDOW_SECONDS - now) // 60) + 1
+            return f"You have used a lot of runs in the last hour. Your draft is still here, so please try again in about {wait} minute{'s' if wait != 1 else ''}."
+        if len(bucket) >= (SERVER_PAID_RUNS_PER_HOUR if is_paid else SERVER_FREE_RUNS_PER_HOUR):
+            return "FormatForge is very busy right now. Your draft is still here, so please try again in a few minutes."
+        session_times.append(now)
+        bucket.append(now)
+    return None
+
+
 # Set these in Railway. UNLOCK_SECRET is required for passes to survive a page refresh.
 UNLOCK_SECRET = os.getenv("UNLOCK_SECRET", "")
 CONTACT_EMAIL = os.getenv("CONTACT_EMAIL", "info@formatforge.help").strip()
@@ -667,7 +714,7 @@ if "session_id" in st.query_params:
             # Drop user directly into Step 3 if they already have output, else Step 2
             st.session_state.studio_step = 3 if st.session_state.clean_text else 2
             tool_title = TOOL_CONFIG[paid_tool]["short_name"]
-            st.toast(f"{tool_title} unlocked. Unlimited edits and .docx exports are active.", icon="✅")
+            st.toast(f"{tool_title} unlocked. Edits, re-runs and .docx exports are active.", icon="✅")
         else:
             st.warning("We could not confirm that payment yet. If you were charged, please refresh in a minute."
                        + (f" Still stuck? Email {CONTACT_EMAIL}." if CONTACT_EMAIL else ""))
@@ -961,8 +1008,9 @@ def terms_modal():
         "about grades, interviews, hiring decisions or any third-party score.\n\n"
         "**2. You are responsible for the result:** AI output can contain mistakes. Always review the result and check it against your "
         "instructor's, publisher's or employer's requirements before you submit it.\n\n"
-        f"**3. Single-Tool Pass:** Each $1.99 pass is a one-time payment (not a subscription) that unlocks unlimited re-runs and `.docx` exports "
-        f"for the one tool you purchased, up to {PRO_MAX_CHARS:,} characters per document."
+        f"**3. Single-Tool Pass:** Each $1.99 pass is a one-time payment (not a subscription) that unlocks re-runs and `.docx` exports "
+        f"for the one tool you purchased, up to {PRO_MAX_CHARS:,} characters per document. Use is subject to fair use: automated use, "
+        "sharing a pass with others, or use that puts excessive load on the service may be slowed or limited."
         + REFUND_MD
         + CONTACT_MD
     )
@@ -1027,7 +1075,7 @@ if st.session_state.current_view == "landing":
                 st.rerun()
 
     st.markdown('<h2 style="text-align: center; margin-top: 40px; margin-bottom: 6px; font-size: 24px; font-weight: 800;">Simple, Pay-As-You-Go Pricing</h2>', unsafe_allow_html=True)
-    st.markdown('<p style="text-align: center; color: #94A3B8; font-size: 14px; margin-bottom: 20px;">Zero subscriptions. Unlimited re-runs & paragraph edits on your unlocked tool.</p>', unsafe_allow_html=True)
+    st.markdown('<p style="text-align: center; color: #94A3B8; font-size: 14px; margin-bottom: 20px;">Zero subscriptions. Re-runs & paragraph edits on your unlocked tool (fair use).</p>', unsafe_allow_html=True)
 
     st.markdown(
         '<div class="pricing-grid">'
@@ -1042,12 +1090,12 @@ if st.session_state.current_view == "landing":
         '</div></div>'
         '<div class="price-card-pro">'
         '<div style="display:flex; justify-content:space-between; align-items:center;">'
-        '<span style="font-weight: 800; font-size: 13px; color: #34D399; text-transform: uppercase;">Single-Tool Unlimited Pass</span>'
+        '<span style="font-weight: 800; font-size: 13px; color: #34D399; text-transform: uppercase;">Single-Tool Pass</span>'
         '<span style="background:#10B981; color:#052E16; font-size:11px; font-weight:800; padding:3px 8px; border-radius:99px;">NO SUBSCRIPTION</span>'
         '</div>'
         '<div style="font-size: 32px; font-weight: 800; margin: 8px 0 16px 0;">$1.99 <span style="font-size: 14px; font-weight: 500; color: #94A3B8;">/ per tool pass</span></div>'
         '<div style="font-size: 14px; line-height: 2.0; color: #E2E8F0;">'
-        '<div class="benefit">✓ <b>Unlimited re-runs & edits</b> on that tool</div>'
+        '<div class="benefit">✓ <b>Re-runs & edits</b> on that tool (fair use)</div>'
         '<div class="benefit">✓ Up to <b>35,000 characters</b> per document</div>'
         '<div class="benefit">✓ <b>Word (.docx) download</b> & one-click copy</div>'
         '<div class="benefit">✓ Full Citation, AI-Cliché, or ATS Audit unlocked</div>'
@@ -1059,7 +1107,7 @@ if st.session_state.current_view == "landing":
     with st.expander("Is the $1.99 pass a recurring subscription?"):
         st.write("No. It is a strict one-time payment of $1.99 via Stripe (Apple Pay, Google Pay, or card). You will never be billed again automatically.")
     with st.expander("What if I notice a typo or forgot a paragraph after paying $1.99?"):
-        st.write("You get unlimited re-runs on the tool you unlocked! Your unlocked pass is kept in your browser's address bar as a signed link, so a refresh will not lock you out. Bookmark the page to come back to it later.")
+        st.write("You can re-run and edit the tool you unlocked as often as you reasonably need (fair use). Your unlocked pass is kept in your browser's address bar as a signed link, so a refresh will not lock you out. Bookmark the page to come back to it later.")
     with st.expander("Are my documents stored?"):
         st.write("FormatForge does not store your documents: your text is processed in server memory and is not saved to a database or disk by us. To generate your result, the text is sent to OpenAI's API (see Privacy at the bottom of the page for details).")
     with st.expander("Can I trust the AI's output?"):
@@ -1246,7 +1294,7 @@ else:
                 if not is_tool_pro:
                     st.caption(f"**{word_count} words** ({char_len:,}/{FREE_INPUT_LIMIT:,} free preview chars) • Free previews left: **{max(0, 1 - tool_free_used)}**")
                 else:
-                    st.caption(f"**{word_count} words** ({char_len:,}/{PRO_MAX_CHARS:,} chars) • **Unlimited edits active**")
+                    st.caption(f"**{word_count} words** ({char_len:,}/{PRO_MAX_CHARS:,} chars) • **Edits & re-runs active**")
             with meta_col2:
                 st.markdown('<div style="text-align:right; font-size:12px; color:#94A3B8; font-weight:600;">Not stored by FormatForge</div>', unsafe_allow_html=True)
 
@@ -1310,6 +1358,11 @@ else:
                             )
 
                         try:
+                            if "run_times" not in st.session_state:
+                                st.session_state["run_times"] = []
+                            busy_reason = reserve_run(_usage_log(), st.session_state["run_times"], is_tool_pro)
+                            if busy_reason:
+                                raise BusyError(busy_reason)
                             st.write(f"{tool_info['steps'][1]}")
                             client = openai.OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
                             response = client.chat.completions.create(
@@ -1340,6 +1393,9 @@ else:
                             st.session_state.studio_step = 3
                             st.rerun()
                             
+                        except BusyError as e:
+                            status_box.update(label="Please try again shortly", state="error", expanded=False)
+                            st.warning(str(e))
                         except Exception as e:
                             status_box.update(label="Error during processing", state="error", expanded=True)
                             print(f"OpenAI error: {type(e).__name__}: {e}", file=sys.stderr)
@@ -1361,8 +1417,8 @@ else:
                 st.session_state.studio_step = 2
                 st.rerun()
         with act_c2:
-            edit_hint = ("Need to add a forgotten paragraph? Click <b>Edit Draft</b>—unlimited re-runs are included with your pass."
-                         if is_tool_pro else "Your free preview run is used. Unlock this tool to edit and re-run without limits.")
+            edit_hint = ("Need to add a forgotten paragraph? Click <b>Edit Draft</b>—re-runs are included with your pass."
+                         if is_tool_pro else "Your free preview run is used. Unlock this tool to edit and re-run.")
             st.markdown(f'<div style="text-align:right; font-size:13px; color:#94A3B8;">{edit_hint}</div>', unsafe_allow_html=True)
 
         st.markdown("<div style='margin-top: 10px;'></div>", unsafe_allow_html=True)
